@@ -7,5 +7,4 @@ edition = "2021"
 
 [dependencies]
 async-trait = "0.1.67"
-discv5 = { version = "0.2.1", features = ["serde"]}
 rlp = "0.5.2"

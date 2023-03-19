@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use discv5::handler::NodeAddress;
 use rlp::DecoderError;
 
 macro_rules! impl_from_variant_wrap {
@@ -19,6 +18,7 @@ pub enum HolePunchError {
     TargetError(String),
 }
 
+// Pin<Box<dyn Future<Output = Result<(), HolePunchError>> + Send, Global>>
 #[async_trait]
 pub trait NatHolePunch {
     /// A FINDNODE request, as part of a find node query, has timed out. Hole punching is
@@ -69,6 +69,12 @@ impl Notification {
     fn encode(self) -> Result<Vec<u8>, HolePunchError> {
         todo!()
     }
+}
+
+/// Discv5 node address.
+pub struct NodeAddress {
+    pub socket_addr: SocketAddr,
+    pub node_id: NodeId,
 }
 
 #[cfg(test)]
