@@ -17,6 +17,19 @@ macro_rules! impl_from_variant_wrap {
         }
     };
 }
+#[macro_export]
+macro_rules! impl_from_variant_unwrap {
+    ($from_type: ty, $to_type: ty, $variant: path) => {
+        impl From<$from_type> for $to_type {
+            fn from(e: $from_type) -> Self {
+                if let $variant(v) = e {
+                    return v;
+                }
+                panic!("Bad impl of From")
+            }
+        }
+    };
+}
 
 #[derive(Debug)]
 pub enum HolePunchError {
@@ -34,7 +47,6 @@ pub trait NatHolePunch {
     /// initiated. The node which passed the hole punch target peer in a NODES response to us is
     /// used as relay.
     async fn on_time_out(
-
         &mut self,
         relay: NodeAddress,
         local_node_address: NodeAddress,
@@ -70,7 +82,7 @@ pub trait NatHolePunch {
         notif: &[u8],
         authenticated_data: &[u8],
     ) -> Result<Vec<u8>, HolePunchError>;
-    /// This node receives a message to relay. It should send a [`RelayMsg`] to the `target` in 
+    /// This node receives a message to relay. It should send a [`RelayMsg`] to the `target` in
     /// the [`RelayInit`] notification.
     async fn on_relay_init(&mut self, notif: RelayInit) -> Result<(), HolePunchError>;
     /// This node received a relayed message and should punch a hole in its NAT for the initiator.
