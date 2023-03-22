@@ -80,7 +80,7 @@ impl Notification {
 }
 
 impl RelayInit {
-    fn rlp_encode(self) -> Vec<u8> {
+    pub fn rlp_encode(self) -> Vec<u8> {
         let RelayInit(initiator, nonce, target) = self;
 
         let mut s = RlpStream::new();
@@ -97,7 +97,7 @@ impl RelayInit {
 }
 
 impl RelayMsg {
-    fn rlp_encode(self) -> Vec<u8> {
+    pub fn rlp_encode(self) -> Vec<u8> {
         let RelayMsg(initiator, nonce) = self;
 
         let mut s = RlpStream::new();

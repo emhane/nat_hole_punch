@@ -46,17 +46,17 @@ pub trait NatHolePunch {
     /// A FINDNODE request, as part of a find node query, has timed out. Hole punching is
     /// initiated. The node which passed the hole punch target peer in a NODES response to us is
     /// used as relay.
-    async fn on_time_out(
+    async fn on_time_out<N: From<NodeAddress> + Send + Sync>(
         &mut self,
-        relay: NodeAddress,
-        local_node_address: NodeAddress,
+        relay: N,
+        local_node_address: N,
         message_nonce: MessageNonce,
         target_node_address: NodeAddress,
     ) -> Result<(), HolePunchError>;
     /// Handle a notification packet received over discv5 used for hole punching.
-    async fn on_notification(
+    async fn on_notification<N: From<NodeAddress> + Send + Sync>(
         &mut self,
-        notif_sender: NodeAddress,
+        notif_sender: N,
         notif_nonce: MessageNonce,
         notif: &[u8],
         authenticated_data: &[u8],
@@ -75,9 +75,9 @@ pub trait NatHolePunch {
     /// (request or response) in the way they handle a session, or rather the absence of a
     /// session. Notifications that can't be decrypted with existing session keys should be
     /// dropped.
-    async fn handle_decryption_with_session(
+    async fn handle_decryption_with_session<N: From<NodeAddress> + Send + Sync>(
         &mut self,
-        session_index: NodeAddress, // notif sender
+        session_index: N, // notif sender
         notif_nonce: MessageNonce,
         notif: &[u8],
         authenticated_data: &[u8],
