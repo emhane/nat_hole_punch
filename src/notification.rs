@@ -24,11 +24,11 @@ pub enum Notification {
 /// A hole punch notification sent to the relay. Contains the node address of the initiator of the
 /// hole punch, the nonce of the request from the initiator to the target that triggered
 /// `on_time_out` and the node address of the hole punch target peer.
-pub struct RelayInit(NodeAddress, NonceOfTimedOutMessage, NodeAddress);
+pub struct RelayInit(pub NodeAddress, pub NonceOfTimedOutMessage, pub NodeAddress);
 /// A relayed hole punch notification sent to the target. Contains the node address of the
 /// initiator of the hole punch and the nonce of the initiator's request that timed out, so the
 /// hole punch target peer can respond with WHOAREYOU to the initiator.
-pub struct RelayMsg(NodeAddress, NonceOfTimedOutMessage);
+pub struct RelayMsg(pub NodeAddress, pub NonceOfTimedOutMessage);
 
 impl_from_variant_wrap!(RelayInit, Notification, Self::RelayInit);
 impl_from_variant_wrap!(RelayMsg, Notification, Self::RelayMsg);
@@ -80,10 +80,6 @@ impl Notification {
 }
 
 impl RelayInit {
-    pub fn new(initiator: NodeAddress, nonce: MessageNonce, target: NodeAddress) -> Self {
-        Self(initiator, nonce, target)
-    }
-
     fn rlp_encode(self) -> Vec<u8> {
         let RelayInit(initiator, nonce, target) = self;
 
@@ -101,10 +97,6 @@ impl RelayInit {
 }
 
 impl RelayMsg {
-    pub fn new(initiator: NodeAddress, nonce: MessageNonce) -> Self {
-        Self(initiator, nonce)
-    }
-
     fn rlp_encode(self) -> Vec<u8> {
         let RelayMsg(initiator, nonce) = self;
 

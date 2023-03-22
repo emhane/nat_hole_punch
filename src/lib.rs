@@ -34,7 +34,7 @@ pub trait NatHolePunch {
     /// initiated. The node which passed the hole punch target peer in a NODES response to us is
     /// used as relay.
     async fn on_time_out(
-        
+
         &mut self,
         relay: NodeAddress,
         local_node_address: NodeAddress,
@@ -70,7 +70,8 @@ pub trait NatHolePunch {
         notif: &[u8],
         authenticated_data: &[u8],
     ) -> Result<Vec<u8>, HolePunchError>;
-    /// This node receives a message to relay.
+    /// This node receives a message to relay. It should send a [`RelayMsg`] to the `target` in 
+    /// the [`RelayInit`] notification.
     async fn on_relay_init(&mut self, notif: RelayInit) -> Result<(), HolePunchError>;
     /// This node received a relayed message and should punch a hole in its NAT for the initiator.
     async fn on_relay_msg(&mut self, notif: RelayMsg) -> Result<(), HolePunchError>;
