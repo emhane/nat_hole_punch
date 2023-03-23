@@ -9,8 +9,8 @@ pub use notification::{MessageNonce, Notification, RelayInit, RelayMsg};
 
 #[macro_export]
 macro_rules! impl_from_variant_wrap {
-    ($from_type: ty, $to_type: ty, $variant: path) => {
-        impl From<$from_type> for $to_type {
+    ($(<$generic: ident>)*, $from_type: ty, $to_type: ty, $variant: path) => {
+        impl$(<$generic>)* From<$from_type> for $to_type {
             fn from(e: $from_type) -> Self {
                 $variant(e)
             }
@@ -32,36 +32,36 @@ macro_rules! impl_from_variant_unwrap {
 }
 
 #[derive(Debug)]
-pub enum HolePunchError {
+pub enum HolePunchError<TDiscvError> {
     NotificationError(DecoderError),
-    Session(&'static str),
-    RelayError(&'static str),
-    TargetError(&'static str),
+    SessionError(TDiscvError),
+    RelayError(TDiscvError),
+    TargetError(TDiscvError),
 }
-
-impl_from_variant_wrap!(DecoderError, HolePunchError, Self::NotificationError);
+impl_from_variant_wrap!(<TDiscv5Error>, DecoderError, HolePunchError<TDiscv5Error>, Self::NotificationError);
 
 #[async_trait]
 pub trait NatHolePunch {
-    type N: From<NodeAddress> + Into<NodeAddress> + Send + Sync;
+    type TNodeAddress: From<NodeAddress> + Into<NodeAddress> + Send + Sync;
+    type TDiscvError;
     /// A FINDNODE request, as part of a find node query, has timed out. Hole punching is
     /// initiated. The node which passed the hole punch target peer in a NODES response to us is
     /// used as relay.
     async fn on_time_out(
         &mut self,
-        relay: Self::N,
-        local_node_address: Self::N,
+        relay: Self::TNodeAddress,
+        local_node_address: Self::TNodeAddress,
         message_nonce: MessageNonce,
-        target_node_address: Self::N,
-    ) -> Result<(), HolePunchError>;
+        target_node_address: Self::TNodeAddress,
+    ) -> Result<(), HolePunchError<Self::TDiscvError>>;
     /// Handle a notification packet received over discv5 used for hole punching.
     async fn on_notification(
         &mut self,
-        notif_sender: Self::N,
+        notif_sender: Self::TNodeAddress,
         notif_nonce: MessageNonce,
         notif: &[u8],
         authenticated_data: &[u8],
-    ) -> Result<(), HolePunchError> {
+    ) -> Result<(), HolePunchError<Self::TDiscvError>> {
         let decrypted_notif = self
             .handle_decryption_with_session(notif_sender, notif_nonce, notif, authenticated_data)
             .await?;
@@ -78,14 +78,21 @@ pub trait NatHolePunch {
     /// dropped.
     async fn handle_decryption_with_session(
         &mut self,
-        session_index: Self::N, // notif sender
+        session_index: Self::TNodeAddress, // notif sender
         notif_nonce: MessageNonce,
         notif: &[u8],
         authenticated_data: &[u8],
-    ) -> Result<Vec<u8>, HolePunchError>;
+    ) -> Result<Vec<u8>, HolePunchError<Self::TDiscvError>>;
     /// This node receives a message to relay. It should send a [`RelayMsg`] to the `target` in
     /// the [`RelayInit`] notification.
-    async fn on_relay_init(&mut self, notif: RelayInit) -> Result<(), HolePunchError>;
-    /// This node received a relayed message and should punch a hole in its NAT for the initiator.
-    async fn on_relay_msg(&mut self, notif: RelayMsg) -> Result<(), HolePunchError>;
+    async fn on_relay_init(
+        &mut self,
+        notif: RelayInit,
+    ) -> Result<(), HolePunchError<Self::TDiscvError>>;
+    /// This node received a relayed message and should punch a hole in its NAT for the initiator
+    /// by sending  a WHOAREYOU packet wrapping the nonce in the [`RelayMsg`].
+    async fn on_relay_msg(
+        &mut self,
+        notif: RelayMsg,
+    ) -> Result<(), HolePunchError<Self::TDiscvError>>;
 }

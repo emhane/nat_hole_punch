@@ -1,4 +1,4 @@
-use crate::{impl_from_variant_unwrap, impl_from_variant_wrap, HolePunchError, NodeAddress};
+use crate::{impl_from_variant_unwrap, impl_from_variant_wrap, NodeAddress};
 use rlp::{DecoderError, Rlp, RlpStream};
 
 /// Notification types for rlp encoding notifications.
@@ -33,15 +33,15 @@ pub struct RelayInit(pub NodeAddress, pub NonceOfTimedOutMessage, pub NodeAddres
 #[derive(Clone, PartialEq, Debug)]
 pub struct RelayMsg(pub NodeAddress, pub NonceOfTimedOutMessage);
 
-impl_from_variant_wrap!(RelayInit, Notification, Self::RelayInit);
+impl_from_variant_wrap!(, RelayInit, Notification, Self::RelayInit);
 impl_from_variant_unwrap!(Notification, RelayInit, Notification::RelayInit);
-impl_from_variant_wrap!(RelayMsg, Notification, Self::RelayMsg);
+impl_from_variant_wrap!(, RelayMsg, Notification, Self::RelayMsg);
 impl_from_variant_unwrap!(Notification, RelayMsg, Notification::RelayMsg);
 
 impl Notification {
-    pub fn rlp_decode(data: &[u8]) -> Result<Self, HolePunchError> {
+    pub fn rlp_decode(data: &[u8]) -> Result<Self, DecoderError> {
         if data.len() < 3 {
-            return Err(DecoderError::RlpIsTooShort.into());
+            return Err(DecoderError::RlpIsTooShort);
         }
         let msg_type = data[0];
 
@@ -49,13 +49,13 @@ impl Notification {
         let list_len = rlp.item_count()?;
         println!("list len {}", list_len);
         if list_len < 2 {
-            return Err(DecoderError::RlpIsTooShort.into());
+            return Err(DecoderError::RlpIsTooShort);
         }
         let initiator = rlp.val_at::<NodeAddress>(0)?;
         let nonce_bytes = rlp.val_at::<Vec<u8>>(1)?;
         println!("list len {}", list_len);
         if nonce_bytes.len() > MESSAGE_NONCE_LENGTH {
-            return Err(DecoderError::RlpIsTooBig.into());
+            return Err(DecoderError::RlpIsTooBig);
         }
         let mut nonce = [0u8; MESSAGE_NONCE_LENGTH];
         nonce[MESSAGE_NONCE_LENGTH - nonce_bytes.len()..].copy_from_slice(&nonce_bytes);
@@ -63,18 +63,18 @@ impl Notification {
         match msg_type {
             REALY_INIT_NOTIF_TYPE => {
                 if list_len != 3 {
-                    return Err(DecoderError::RlpIncorrectListLen.into());
+                    return Err(DecoderError::RlpIncorrectListLen);
                 }
                 let target = rlp.val_at::<NodeAddress>(2)?;
                 Ok(RelayInit(initiator, nonce, target).into())
             }
             REALY_MSG_NOTIF_TYPE => {
                 if list_len != 2 {
-                    return Err(DecoderError::RlpIncorrectListLen.into());
+                    return Err(DecoderError::RlpIncorrectListLen);
                 }
                 Ok(RelayMsg(initiator, nonce).into())
             }
-            _ => Err(DecoderError::Custom("invalid notification type").into()),
+            _ => Err(DecoderError::Custom("invalid notification type")),
         }
     }
 }
