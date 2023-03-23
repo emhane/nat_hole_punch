@@ -45,14 +45,14 @@ impl Decodable for NodeAddress {
         }
         let list_len = rlp.item_count()?;
         if list_len < 2 {
-            println!("list len {}", list_len);
             return Err(DecoderError::RlpIncorrectListLen);
         }
         let socket_bytes = rlp.val_at::<Vec<u8>>(0)?;
+
         let mut port_bytes = [0u8; 2];
         port_bytes.copy_from_slice(&socket_bytes[socket_bytes.len() - 2..]);
         let port = u16::from_be_bytes(port_bytes);
-        println!("socket_bytes_len {}", socket_bytes.len());
+
         let socket_addr = match socket_bytes.len() {
             6 => {
                 // 4 bytes ip + 2 bytes port
@@ -74,7 +74,6 @@ impl Decodable for NodeAddress {
                 ))
             }
             _ => {
-                println!("list len {}", list_len);
                 return Err(DecoderError::RlpIncorrectListLen);
             }
         };

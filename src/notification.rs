@@ -47,19 +47,19 @@ impl Notification {
 
         let rlp = Rlp::new(&data[1..]);
         let list_len = rlp.item_count()?;
-        println!("list len {}", list_len);
         if list_len < 2 {
             return Err(DecoderError::RlpIsTooShort);
         }
+
         let initiator = rlp.val_at::<NodeAddress>(0)?;
+
         let nonce_bytes = rlp.val_at::<Vec<u8>>(1)?;
-        println!("list len {}", list_len);
         if nonce_bytes.len() > MESSAGE_NONCE_LENGTH {
             return Err(DecoderError::RlpIsTooBig);
         }
         let mut nonce = [0u8; MESSAGE_NONCE_LENGTH];
         nonce[MESSAGE_NONCE_LENGTH - nonce_bytes.len()..].copy_from_slice(&nonce_bytes);
-        println!("list len {}", list_len);
+
         match msg_type {
             REALY_INIT_NOTIF_TYPE => {
                 if list_len != 3 {
