@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 async-trait = "0.1.67"
-enr = "0.8.0"
+enr = { version = "0.7.0" }
 hex = "0.4.3"
 rlp = "0.5.2"

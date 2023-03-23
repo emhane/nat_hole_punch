@@ -43,20 +43,21 @@ impl_from_variant_wrap!(DecoderError, HolePunchError, Self::NotificationError);
 
 #[async_trait]
 pub trait NatHolePunch {
+    type N: From<NodeAddress> + Into<NodeAddress> + Send + Sync;
     /// A FINDNODE request, as part of a find node query, has timed out. Hole punching is
     /// initiated. The node which passed the hole punch target peer in a NODES response to us is
     /// used as relay.
-    async fn on_time_out<N: From<NodeAddress> + Send + Sync>(
+    async fn on_time_out(
         &mut self,
-        relay: N,
-        local_node_address: N,
+        relay: Self::N,
+        local_node_address: Self::N,
         message_nonce: MessageNonce,
-        target_node_address: NodeAddress,
+        target_node_address: Self::N,
     ) -> Result<(), HolePunchError>;
     /// Handle a notification packet received over discv5 used for hole punching.
-    async fn on_notification<N: From<NodeAddress> + Send + Sync>(
+    async fn on_notification(
         &mut self,
-        notif_sender: N,
+        notif_sender: Self::N,
         notif_nonce: MessageNonce,
         notif: &[u8],
         authenticated_data: &[u8],
@@ -75,9 +76,9 @@ pub trait NatHolePunch {
     /// (request or response) in the way they handle a session, or rather the absence of a
     /// session. Notifications that can't be decrypted with existing session keys should be
     /// dropped.
-    async fn handle_decryption_with_session<N: From<NodeAddress> + Send + Sync>(
+    async fn handle_decryption_with_session(
         &mut self,
-        session_index: N, // notif sender
+        session_index: Self::N, // notif sender
         notif_nonce: MessageNonce,
         notif: &[u8],
         authenticated_data: &[u8],
