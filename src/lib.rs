@@ -1,16 +1,14 @@
 use async_trait::async_trait;
 use rlp::DecoderError;
 
-mod node_address;
 mod notification;
 
-pub use node_address::NodeAddress;
 pub use notification::{MessageNonce, Notification, RelayInit, RelayMsg};
 
 #[macro_export]
 macro_rules! impl_from_variant_wrap {
-    ($(<$generic: ident>)*, $from_type: ty, $to_type: ty, $variant: path) => {
-        impl$(<$generic>)* From<$from_type> for $to_type {
+    ($(<$($generic: ident$(: $trait: ident$(+ $traits: ident)*)*,)+>)*, $from_type: ty, $to_type: ty, $variant: path) => {
+        impl$(<$($generic $(: $trait $(+ $traits)*)*,)+>)* From<$from_type> for $to_type {
             fn from(e: $from_type) -> Self {
                 $variant(e)
             }
@@ -19,8 +17,8 @@ macro_rules! impl_from_variant_wrap {
 }
 #[macro_export]
 macro_rules! impl_from_variant_unwrap {
-    ($from_type: ty, $to_type: ty, $variant: path) => {
-        impl From<$from_type> for $to_type {
+    ($(<$($generic: ident$(: $trait: ident$(+ $traits: ident)*)*,)+>)*, $from_type: ty, $to_type: ty, $variant: path) => {
+        impl$(<$($generic $(: $trait $(+ $traits)*)*,)+>)* From<$from_type> for $to_type {
             fn from(e: $from_type) -> Self {
                 if let $variant(v) = e {
                     return v;
@@ -38,11 +36,16 @@ pub enum HolePunchError<TDiscv5Error> {
     RelayError(TDiscv5Error),
     TargetError(TDiscv5Error),
 }
-impl_from_variant_wrap!(<TDiscv5Error>, DecoderError, HolePunchError<TDiscv5Error>, Self::NotificationError);
+impl_from_variant_wrap!(<TDiscv5Error,>, DecoderError, HolePunchError<TDiscv5Error>, Self::NotificationError);
 
 #[async_trait]
 pub trait NatHolePunch {
-    type TNodeAddress: From<NodeAddress> + Into<NodeAddress> + Send + Sync;
+    /// A standardised type for sending a node address over discv5.
+    type TEnr: rlp::Encodable + rlp::Decodable + Send + Sync;
+    /// A type for indexing sessions. Each `(node-id, socket-address)` combination gets a unique 
+    /// session in discv5.
+    type TNodeAddress: Send + Sync;
+    /// Discv5 error.
     type TDiscv5Error;
     /// A FINDNODE request, as part of a find node query, has timed out. Hole punching is
     /// initiated. The node which passed the hole punch target peer in a NODES response to us is
@@ -87,12 +90,12 @@ pub trait NatHolePunch {
     /// the [`RelayInit`] notification.
     async fn on_relay_init(
         &mut self,
-        notif: RelayInit,
+        notif: RelayInit<Self::TEnr>,
     ) -> Result<(), HolePunchError<Self::TDiscv5Error>>;
     /// This node received a relayed message and should punch a hole in its NAT for the initiator
-    /// by sending  a WHOAREYOU packet wrapping the nonce in the [`RelayMsg`].
+    /// by sending a WHOAREYOU packet wrapping the nonce in the [`RelayMsg`].
     async fn on_relay_msg(
         &mut self,
-        notif: RelayMsg,
+        notif: RelayMsg<Self::TEnr>,
     ) -> Result<(), HolePunchError<Self::TDiscv5Error>>;
 }

@@ -1,12 +1,12 @@
-use crate::{impl_from_variant_unwrap, impl_from_variant_wrap, NodeAddress};
-use rlp::{DecoderError, Rlp, RlpStream};
+use crate::{impl_from_variant_unwrap, impl_from_variant_wrap};
+use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 
 /// Notification types for rlp encoding notifications.
 pub const REALY_INIT_NOTIF_TYPE: u8 = 0;
 pub const REALY_MSG_NOTIF_TYPE: u8 = 1;
-
 /// Discv5 message nonce length in bytes.
 pub const MESSAGE_NONCE_LENGTH: usize = 12;
+
 /// Discv5 message nonce.
 pub type MessageNonce = [u8; MESSAGE_NONCE_LENGTH];
 /// The message nonce of the timed out FINDNODE request that triggered the initiation of this hole
@@ -15,30 +15,30 @@ pub type NonceOfTimedOutMessage = MessageNonce;
 
 /// A unicast notification sent over discv5.
 #[derive(Debug)]
-pub enum Notification {
-    /// Initialise a one-shot relay circuit.
-    RelayInit(RelayInit),
-    /// A relayed notification.
-    RelayMsg(RelayMsg),
+pub enum Notification<TEnr: Encodable + Decodable> {
+    /// Initialise a one-shot relay circuit for hole punching.
+    RelayInit(RelayInit<TEnr>),
+    /// A relayed notification for hole punching.
+    RelayMsg(RelayMsg<TEnr>),
 }
 
-/// A hole punch notification sent to the relay. Contains the node address of the initiator of the
-/// hole punch, the nonce of the request from the initiator to the target that triggered
-/// `on_time_out` and the node address of the hole punch target peer.
+/// A hole punch notification sent to the relay. Contains the enr of the initiator of the hole
+/// punch, the nonce of the request from the initiator to the target that triggered `on_time_out`
+/// and the enr of the hole punch target peer.
 #[derive(Clone, PartialEq, Debug)]
-pub struct RelayInit(pub NodeAddress, pub NonceOfTimedOutMessage, pub NodeAddress);
-/// A relayed hole punch notification sent to the target. Contains the node address of the
-/// initiator of the hole punch and the nonce of the initiator's request that timed out, so the
-/// hole punch target peer can respond with WHOAREYOU to the initiator.
+pub struct RelayInit<TEnr: Encodable + Decodable>(pub TEnr, pub NonceOfTimedOutMessage, pub TEnr);
+/// A relayed hole punch notification sent to the target. Contains the enr of the initiator of the
+/// hole punch and the nonce of the initiator's request that timed out, so the hole punch target
+/// peer can respond with WHOAREYOU to the initiator.
 #[derive(Clone, PartialEq, Debug)]
-pub struct RelayMsg(pub NodeAddress, pub NonceOfTimedOutMessage);
+pub struct RelayMsg<TEnr: Encodable + Decodable>(pub TEnr, pub NonceOfTimedOutMessage);
 
-impl_from_variant_wrap!(, RelayInit, Notification, Self::RelayInit);
-impl_from_variant_unwrap!(Notification, RelayInit, Notification::RelayInit);
-impl_from_variant_wrap!(, RelayMsg, Notification, Self::RelayMsg);
-impl_from_variant_unwrap!(Notification, RelayMsg, Notification::RelayMsg);
+impl_from_variant_wrap!(<TEnr: Encodable + Decodable,>, RelayInit<TEnr>, Notification<TEnr>, Self::RelayInit);
+impl_from_variant_unwrap!(<TEnr: Encodable + Decodable,>, Notification<TEnr>, RelayInit<TEnr>, Notification::RelayInit);
+impl_from_variant_wrap!(<TEnr: Encodable + Decodable,>, RelayMsg<TEnr>, Notification<TEnr>, Self::RelayMsg);
+impl_from_variant_unwrap!(<TEnr: Encodable + Decodable,>, Notification<TEnr>, RelayMsg<TEnr>, Notification::RelayMsg);
 
-impl Notification {
+impl<TEnr: Encodable + Decodable> Notification<TEnr> {
     pub fn rlp_decode(data: &[u8]) -> Result<Self, DecoderError> {
         if data.len() < 3 {
             return Err(DecoderError::RlpIsTooShort);
@@ -51,7 +51,7 @@ impl Notification {
             return Err(DecoderError::RlpIsTooShort);
         }
 
-        let initiator = rlp.val_at::<NodeAddress>(0)?;
+        let initiator = rlp.val_at::<TEnr>(0)?;
 
         let nonce_bytes = rlp.val_at::<Vec<u8>>(1)?;
         if nonce_bytes.len() > MESSAGE_NONCE_LENGTH {
@@ -65,7 +65,7 @@ impl Notification {
                 if list_len != 3 {
                     return Err(DecoderError::RlpIncorrectListLen);
                 }
-                let target = rlp.val_at::<NodeAddress>(2)?;
+                let target = rlp.val_at::<TEnr>(2)?;
                 Ok(RelayInit(initiator, nonce, target).into())
             }
             REALY_MSG_NOTIF_TYPE => {
@@ -79,7 +79,7 @@ impl Notification {
     }
 }
 
-impl RelayInit {
+impl<TEnr: Encodable + Decodable> RelayInit<TEnr> {
     pub fn rlp_encode(self) -> Vec<u8> {
         let RelayInit(initiator, nonce, target) = self;
 
@@ -96,7 +96,7 @@ impl RelayInit {
     }
 }
 
-impl RelayMsg {
+impl<TEnr: Encodable + Decodable> RelayMsg<TEnr> {
     pub fn rlp_encode(self) -> Vec<u8> {
         let RelayMsg(initiator, nonce) = self;
 
@@ -115,7 +115,6 @@ impl RelayMsg {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use enr::NodeId;
     use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
     #[test]
@@ -123,11 +122,13 @@ mod tests {
         let ip: Ipv4Addr = "127.0.0.1".parse().unwrap();
         let port = 5000;
         let socket_addr: SocketAddr = SocketAddrV4::new(ip, port).into();
-        let node_id = NodeId::parse(
-            &hex::decode("fb757dc581730490a1d7a00deea65e9b1936924caaea8f44d476014856b68736")
-                .unwrap(),
-        )
-        .unwrap();
+
+        let node_id_bytes =
+            hex::decode("fb757dc581730490a1d7a00deea65e9b1936924caaea8f44d476014856b68736")
+                .unwrap();
+        let mut node_id = [0u8; 32];
+        node_id[32 - node_id_bytes.len()..].copy_from_slice(&node_id_bytes);
+
         let node_address = NodeAddress {
             socket_addr,
             node_id,
@@ -136,10 +137,12 @@ mod tests {
         let ip_target: Ipv4Addr = "127.0.0.1".parse().unwrap();
         let port_target = 5001;
         let socket_addr_target: SocketAddr = SocketAddrV4::new(ip_target, port_target).into();
-        let node_id_target = NodeId::parse(
-            &hex::decode("fb757dc581730490a1d7a00deea65e9b1936924caaea8f44d47601485668").unwrap(),
-        )
-        .unwrap();
+
+        let node_id_target_bytes =
+            hex::decode("fb757dc581730490a1d7a00deea65e9b1936924caaea8f44d47601485668").unwrap();
+        let mut node_id_target = [0u8; 32];
+        node_id_target[32 - node_id_target_bytes.len()..].copy_from_slice(&node_id_target_bytes);
+
         let node_address_target = NodeAddress {
             socket_addr: socket_addr_target,
             node_id: node_id_target,
@@ -162,10 +165,11 @@ mod tests {
         let ip: Ipv4Addr = "127.0.0.1".parse().unwrap();
         let port = 5000;
         let socket_addr: SocketAddr = SocketAddrV4::new(ip, port).into();
-        let node_id = NodeId::parse(
-            &hex::decode("fb757dc581730490a1d7a00deea65e9b193691111111111118").unwrap(),
-        )
-        .unwrap();
+        let node_id_bytes =
+            hex::decode("fb757dc581730490a1d7a00deea65e9b193691111111111118").unwrap();
+        let mut node_id = [0u8; 32];
+        node_id[32 - node_id_bytes.len()..].copy_from_slice(&node_id_bytes);
+
         let node_address = NodeAddress {
             socket_addr,
             node_id,
