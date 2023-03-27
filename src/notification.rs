@@ -115,7 +115,6 @@ impl RelayMsg {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use enr::NodeId;
     use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
     #[test]
@@ -123,11 +122,13 @@ mod tests {
         let ip: Ipv4Addr = "127.0.0.1".parse().unwrap();
         let port = 5000;
         let socket_addr: SocketAddr = SocketAddrV4::new(ip, port).into();
-        let node_id = NodeId::parse(
-            &hex::decode("fb757dc581730490a1d7a00deea65e9b1936924caaea8f44d476014856b68736")
-                .unwrap(),
-        )
-        .unwrap();
+
+        let node_id_bytes =
+            hex::decode("fb757dc581730490a1d7a00deea65e9b1936924caaea8f44d476014856b68736")
+                .unwrap();
+        let mut node_id = [0u8; 32];
+        node_id[32 - node_id_bytes.len()..].copy_from_slice(&node_id_bytes);
+
         let node_address = NodeAddress {
             socket_addr,
             node_id,
@@ -136,10 +137,12 @@ mod tests {
         let ip_target: Ipv4Addr = "127.0.0.1".parse().unwrap();
         let port_target = 5001;
         let socket_addr_target: SocketAddr = SocketAddrV4::new(ip_target, port_target).into();
-        let node_id_target = NodeId::parse(
-            &hex::decode("fb757dc581730490a1d7a00deea65e9b1936924caaea8f44d47601485668").unwrap(),
-        )
-        .unwrap();
+
+        let node_id_target_bytes =
+            hex::decode("fb757dc581730490a1d7a00deea65e9b1936924caaea8f44d47601485668").unwrap();
+        let mut node_id_target = [0u8; 32];
+        node_id_target[32 - node_id_target_bytes.len()..].copy_from_slice(&node_id_target_bytes);
+
         let node_address_target = NodeAddress {
             socket_addr: socket_addr_target,
             node_id: node_id_target,
@@ -162,10 +165,11 @@ mod tests {
         let ip: Ipv4Addr = "127.0.0.1".parse().unwrap();
         let port = 5000;
         let socket_addr: SocketAddr = SocketAddrV4::new(ip, port).into();
-        let node_id = NodeId::parse(
-            &hex::decode("fb757dc581730490a1d7a00deea65e9b193691111111111118").unwrap(),
-        )
-        .unwrap();
+        let node_id_bytes =
+            hex::decode("fb757dc581730490a1d7a00deea65e9b193691111111111118").unwrap();
+        let mut node_id = [0u8; 32];
+        node_id[32 - node_id_bytes.len()..].copy_from_slice(&node_id_bytes);
+
         let node_address = NodeAddress {
             socket_addr,
             node_id,

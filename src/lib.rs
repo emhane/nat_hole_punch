@@ -4,7 +4,7 @@ use rlp::DecoderError;
 mod node_address;
 mod notification;
 
-pub use node_address::NodeAddress;
+pub use node_address::{NodeAddress, NodeId};
 pub use notification::{MessageNonce, Notification, RelayInit, RelayMsg};
 
 #[macro_export]

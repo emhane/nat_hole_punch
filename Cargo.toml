@@ -7,6 +7,5 @@ edition = "2021"
 
 [dependencies]
 async-trait = "0.1.67"
-enr = { version = "0.7.0" } # same version as discv5 for transparent conversion between NodeId type in local NodeAddress type and discv5 NodeAddress type
 hex = "0.4.3"
 rlp = "0.5.2"

@@ -1,9 +1,10 @@
-use enr::NodeId;
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
 const DEFAULT_IPV6_FLOW_INFO: u32 = 0;
 const DEFAULT_IPV6_SCOPE_ID: u32 = 0;
+/// Discv5 node id.
+pub type NodeId = [u8; 32];
 
 /// Discv5 node address.
 #[derive(Clone, PartialEq, Debug)]
@@ -34,7 +35,7 @@ impl Encodable for NodeAddress {
                 .concat(),
             ),
         };
-        s.append(&(&self.node_id.raw() as &[u8]));
+        s.append(&(&self.node_id as &[u8]));
     }
 }
 
@@ -102,11 +103,12 @@ mod tests {
         let port = 9030;
         let socket_addr: SocketAddr =
             SocketAddrV6::new(ip, port, DEFAULT_IPV6_FLOW_INFO, DEFAULT_IPV6_SCOPE_ID).into();
-        let node_id = NodeId::parse(
-            &hex::decode("7f9701f05473580f50caff3c8a62e97f380497a17405b9db2d30e3e91e7e4241")
-                .unwrap(),
-        )
-        .unwrap();
+
+        let node_id_bytes =
+            hex::decode("7f9701f05473580f50caff3c8a62e97f380497a17405b9db2d30e3e91e7e4241")
+                .unwrap();
+        let mut node_id = [0u8; 32];
+        node_id[32 - node_id_bytes.len()..].copy_from_slice(&node_id_bytes);
 
         let node_address = NodeAddress {
             socket_addr,
