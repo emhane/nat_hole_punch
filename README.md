@@ -6,4 +6,4 @@ Manual testing: https://github.com/emhane/discv5-cli/blob/nat/README.md
 Plugged in to discv5: https://github.com/emhane/discv5/tree/nat-hole-punch
 
 ![hole_punch_emhane_fjl](nat_hole_punch_sequence_diagram.png)
-WIP @emhane [@fjl](https://github.com/fjl)
+@emhane [@fjl](https://github.com/fjl)
