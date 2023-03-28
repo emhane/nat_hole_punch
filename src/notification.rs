@@ -38,7 +38,7 @@ impl_from_variant_unwrap!(<TEnr: Encodable + Decodable,>, Notification<TEnr>, Re
 impl_from_variant_wrap!(<TEnr: Encodable + Decodable,>, RelayMsg<TEnr>, Notification<TEnr>, Self::RelayMsg);
 impl_from_variant_unwrap!(<TEnr: Encodable + Decodable,>, Notification<TEnr>, RelayMsg<TEnr>, Notification::RelayMsg);
 
-impl<TEnr: Encodable + Decodable> Notification<TEnr> {
+impl<TEnr> Notification<TEnr> where TEnr: Encodable + Decodable {
     pub fn rlp_decode(data: &[u8]) -> Result<Self, DecoderError> {
         if data.len() < 3 {
             return Err(DecoderError::RlpIsTooShort);
@@ -79,7 +79,7 @@ impl<TEnr: Encodable + Decodable> Notification<TEnr> {
     }
 }
 
-impl<TEnr: Encodable + Decodable> RelayInit<TEnr> {
+impl<TEnr> RelayInit<TEnr> where TEnr: Encodable + Decodable {
     pub fn rlp_encode(self) -> Vec<u8> {
         let RelayInit(initiator, nonce, target) = self;
 
@@ -89,14 +89,14 @@ impl<TEnr: Encodable + Decodable> RelayInit<TEnr> {
         s.append(&(&nonce as &[u8]));
         s.append(&target);
 
-        let mut buf = [0u8; 98];
-        buf[0] = REALY_INIT_NOTIF_TYPE;
-        buf[1..].copy_from_slice(&s.out());
-        buf.to_vec()
+        let mut buf: Vec<u8> = Vec::with_capacity(612);
+        buf.push(REALY_INIT_NOTIF_TYPE);
+        buf.extend_from_slice(&s.out());
+        buf
     }
 }
 
-impl<TEnr: Encodable + Decodable> RelayMsg<TEnr> {
+impl<TEnr> RelayMsg<TEnr> where TEnr: Encodable + Decodable {
     pub fn rlp_encode(self) -> Vec<u8> {
         let RelayMsg(initiator, nonce) = self;
 
@@ -105,10 +105,10 @@ impl<TEnr: Encodable + Decodable> RelayMsg<TEnr> {
         s.append(&initiator);
         s.append(&(&nonce as &[u8]));
 
-        let mut buf = [0u8; 56];
-        buf[0] = REALY_MSG_NOTIF_TYPE;
-        buf[1..].copy_from_slice(&s.out());
-        buf.to_vec()
+        let mut buf: Vec<u8> = Vec::with_capacity(312);
+        buf.push(REALY_MSG_NOTIF_TYPE);
+        buf.extend_from_slice(&s.out());
+        buf
     }
 }
 
