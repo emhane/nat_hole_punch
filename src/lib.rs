@@ -3,7 +3,7 @@ use rlp::DecoderError;
 
 mod notification;
 
-pub use notification::{MessageNonce, Notification, RelayInit, RelayMsg};
+pub use notification::{MessageNonce, NodeId, Notification, RelayInit, RelayMsg};
 
 #[macro_export]
 macro_rules! impl_from_variant_wrap {
@@ -53,9 +53,9 @@ pub trait NatHolePunch {
     async fn on_time_out(
         &mut self,
         relay: Self::TNodeAddress,
-        local_node_address: Self::TNodeAddress,
-        message_nonce: MessageNonce,
-        target_node_address: Self::TNodeAddress,
+        local_enr: Self::TEnr,
+        timed_out_message_nonce: MessageNonce,
+        target_session_index: Self::TNodeAddress,
     ) -> Result<(), HolePunchError<Self::TDiscv5Error>>;
     /// Handle a notification packet received over discv5 used for hole punching.
     async fn on_notification(

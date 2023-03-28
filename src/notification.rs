@@ -82,6 +82,7 @@ where
                 }
                 let mut tgt = [0u8; NODE_ID_LENGTH];
                 tgt[NODE_ID_LENGTH - tgt_bytes.len()..].copy_from_slice(&tgt_bytes);
+
                 Ok(RelayInit(initiator, tgt, nonce).into())
             }
             REALY_MSG_NOTIF_TYPE => {
