@@ -38,7 +38,10 @@ impl_from_variant_unwrap!(<TEnr: Encodable + Decodable,>, Notification<TEnr>, Re
 impl_from_variant_wrap!(<TEnr: Encodable + Decodable,>, RelayMsg<TEnr>, Notification<TEnr>, Self::RelayMsg);
 impl_from_variant_unwrap!(<TEnr: Encodable + Decodable,>, Notification<TEnr>, RelayMsg<TEnr>, Notification::RelayMsg);
 
-impl<TEnr> Notification<TEnr> where TEnr: Encodable + Decodable {
+impl<TEnr> Notification<TEnr>
+where
+    TEnr: Encodable + Decodable,
+{
     pub fn rlp_decode(data: &[u8]) -> Result<Self, DecoderError> {
         if data.len() < 3 {
             return Err(DecoderError::RlpIsTooShort);
@@ -79,7 +82,10 @@ impl<TEnr> Notification<TEnr> where TEnr: Encodable + Decodable {
     }
 }
 
-impl<TEnr> RelayInit<TEnr> where TEnr: Encodable + Decodable {
+impl<TEnr> RelayInit<TEnr>
+where
+    TEnr: Encodable + Decodable,
+{
     pub fn rlp_encode(self) -> Vec<u8> {
         let RelayInit(initiator, nonce, target) = self;
 
@@ -96,7 +102,10 @@ impl<TEnr> RelayInit<TEnr> where TEnr: Encodable + Decodable {
     }
 }
 
-impl<TEnr> RelayMsg<TEnr> where TEnr: Encodable + Decodable {
+impl<TEnr> RelayMsg<TEnr>
+where
+    TEnr: Encodable + Decodable,
+{
     pub fn rlp_encode(self) -> Vec<u8> {
         let RelayMsg(initiator, nonce) = self;
 
@@ -115,44 +124,25 @@ impl<TEnr> RelayMsg<TEnr> where TEnr: Encodable + Decodable {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
+    use enr::{CombinedKey, EnrBuilder};
 
     #[test]
     fn test_enocde_decode_relay_init() {
-        let ip: Ipv4Addr = "127.0.0.1".parse().unwrap();
-        let port = 5000;
-        let socket_addr: SocketAddr = SocketAddrV4::new(ip, port).into();
+        // generate a new enr key for the initiator
+        let enr_key = CombinedKey::generate_secp256k1();
+        // construct the initiator's ENR
+        let init_enr = EnrBuilder::new("v4").build(&enr_key).unwrap();
 
-        let node_id_bytes =
-            hex::decode("fb757dc581730490a1d7a00deea65e9b1936924caaea8f44d476014856b68736")
-                .unwrap();
-        let mut node_id = [0u8; 32];
-        node_id[32 - node_id_bytes.len()..].copy_from_slice(&node_id_bytes);
-
-        let node_address = NodeAddress {
-            socket_addr,
-            node_id,
-        };
-
-        let ip_target: Ipv4Addr = "127.0.0.1".parse().unwrap();
-        let port_target = 5001;
-        let socket_addr_target: SocketAddr = SocketAddrV4::new(ip_target, port_target).into();
-
-        let node_id_target_bytes =
-            hex::decode("fb757dc581730490a1d7a00deea65e9b1936924caaea8f44d47601485668").unwrap();
-        let mut node_id_target = [0u8; 32];
-        node_id_target[32 - node_id_target_bytes.len()..].copy_from_slice(&node_id_target_bytes);
-
-        let node_address_target = NodeAddress {
-            socket_addr: socket_addr_target,
-            node_id: node_id_target,
-        };
+        // generate a new enr key for the target
+        let enr_key_tgt = CombinedKey::generate_secp256k1();
+        // construct the target's ENR
+        let tgt_enr = EnrBuilder::new("v4").build(&enr_key_tgt).unwrap();
 
         let nonce_bytes = hex::decode("47644922f5d6e951051051ac").unwrap();
         let mut nonce = [0u8; MESSAGE_NONCE_LENGTH];
         nonce[MESSAGE_NONCE_LENGTH - nonce_bytes.len()..].copy_from_slice(&nonce_bytes);
 
-        let notif = RelayInit(node_address, nonce, node_address_target);
+        let notif = RelayInit(init_enr, nonce, tgt_enr);
 
         let encoded_notif = notif.clone().rlp_encode();
         let decoded_notif = Notification::rlp_decode(&encoded_notif).expect("Should decode");
@@ -162,24 +152,16 @@ mod tests {
 
     #[test]
     fn test_enocde_decode_relay_msg() {
-        let ip: Ipv4Addr = "127.0.0.1".parse().unwrap();
-        let port = 5000;
-        let socket_addr: SocketAddr = SocketAddrV4::new(ip, port).into();
-        let node_id_bytes =
-            hex::decode("fb757dc581730490a1d7a00deea65e9b193691111111111118").unwrap();
-        let mut node_id = [0u8; 32];
-        node_id[32 - node_id_bytes.len()..].copy_from_slice(&node_id_bytes);
-
-        let node_address = NodeAddress {
-            socket_addr,
-            node_id,
-        };
+        // generate a new enr key for the initiator
+        let enr_key = CombinedKey::generate_secp256k1();
+        // construct the initiator's ENR
+        let init_enr = EnrBuilder::new("v4").build(&enr_key).unwrap();
 
         let nonce_bytes = hex::decode("9951051051aceb").unwrap();
         let mut nonce = [0u8; MESSAGE_NONCE_LENGTH];
         nonce[MESSAGE_NONCE_LENGTH - nonce_bytes.len()..].copy_from_slice(&nonce_bytes);
 
-        let notif = RelayMsg(node_address, nonce);
+        let notif = RelayMsg(init_enr, nonce);
 
         let encoded_notif = notif.clone().rlp_encode();
         let decoded_notif = Notification::rlp_decode(&encoded_notif).expect("Should decode");

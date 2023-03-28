@@ -42,7 +42,7 @@ impl_from_variant_wrap!(<TDiscv5Error,>, DecoderError, HolePunchError<TDiscv5Err
 pub trait NatHolePunch {
     /// A standardised type for sending a node address over discv5.
     type TEnr: rlp::Encodable + rlp::Decodable + Send + Sync;
-    /// A type for indexing sessions. Each `(node-id, socket-address)` combination gets a unique 
+    /// A type for indexing sessions. Each `(node-id, socket-address)` combination gets a unique
     /// session in discv5.
     type TNodeAddress: Send + Sync;
     /// Discv5 error.
