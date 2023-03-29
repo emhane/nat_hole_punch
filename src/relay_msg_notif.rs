@@ -11,7 +11,7 @@ type NonceOfTimedOutMessage = MessageNonce;
 /// hole punch and the nonce of the initiator's request that timed out.
 ///
 /// The hole punch target uses the nonce to respond with WHOAREYOU to the initiator.
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct RelayMsg<TEnr: Encodable + Decodable + Display>(pub TEnr, pub NonceOfTimedOutMessage);
 
 impl_from_variant_unwrap!(<TEnr: Encodable + Decodable + Display,>, Notification<TEnr>, RelayMsg<TEnr>, Notification::RelayMsg);

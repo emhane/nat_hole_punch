@@ -10,7 +10,7 @@ type NonceOfTimedOutMessage = MessageNonce;
 /// A hole punch notification sent to the relay. Contains the enr of the initiator of the hole
 /// punch (the sender), the nonce of the request from the initiator to the target that triggered
 /// `on_time_out` and the node id of the hole punch target peer.
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct RelayInit<TEnr: Encodable + Decodable + Display>(
     pub TEnr,
     pub NodeId,
