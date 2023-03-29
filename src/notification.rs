@@ -13,9 +13,9 @@ pub const NODE_ID_LENGTH: usize = 32;
 /// Notification types as according to wire protocol.
 ///
 /// RelayInit notification type.
-pub const REALY_INIT_NOTIF_TYPE: u8 = 0;
+pub const REALY_INIT_NOTIF_TYPE: u8 = 1;
 /// RelayMsg notification type.
-pub const REALY_MSG_NOTIF_TYPE: u8 = 1;
+pub const REALY_MSG_NOTIF_TYPE: u8 = 2;
 
 /// Discv5 message nonce.
 pub type MessageNonce = [u8; MESSAGE_NONCE_LENGTH];
