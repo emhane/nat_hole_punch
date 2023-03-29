@@ -1,42 +1,11 @@
 use async_trait::async_trait;
-use rlp::DecoderError;
+use std::fmt::{Debug, Display};
 
+mod error;
 mod notification;
 
+pub use error::HolePunchError;
 pub use notification::{MessageNonce, NodeId, Notification, RelayInit, RelayMsg};
-
-#[macro_export]
-macro_rules! impl_from_variant_wrap {
-    ($(<$($generic: ident$(: $trait: ident$(+ $traits: ident)*)*,)+>)*, $from_type: ty, $to_type: ty, $variant: path) => {
-        impl$(<$($generic $(: $trait $(+ $traits)*)*,)+>)* From<$from_type> for $to_type {
-            fn from(e: $from_type) -> Self {
-                $variant(e)
-            }
-        }
-    };
-}
-#[macro_export]
-macro_rules! impl_from_variant_unwrap {
-    ($(<$($generic: ident$(: $trait: ident$(+ $traits: ident)*)*,)+>)*, $from_type: ty, $to_type: ty, $variant: path) => {
-        impl$(<$($generic $(: $trait $(+ $traits)*)*,)+>)* From<$from_type> for $to_type {
-            fn from(e: $from_type) -> Self {
-                if let $variant(v) = e {
-                    return v;
-                }
-                panic!("Bad impl of From")
-            }
-        }
-    };
-}
-
-#[derive(Debug)]
-pub enum HolePunchError<TDiscv5Error> {
-    NotificationError(DecoderError),
-    SessionError(TDiscv5Error),
-    RelayError(TDiscv5Error),
-    TargetError(TDiscv5Error),
-}
-impl_from_variant_wrap!(<TDiscv5Error,>, DecoderError, HolePunchError<TDiscv5Error>, Self::NotificationError);
 
 #[async_trait]
 pub trait NatHolePunch {
@@ -46,7 +15,7 @@ pub trait NatHolePunch {
     /// session in discv5.
     type TNodeAddress: Send + Sync;
     /// Discv5 error.
-    type TDiscv5Error;
+    type TDiscv5Error: Display + Debug;
     /// A FINDNODE request, as part of a find node query, has timed out. Hole punching is
     /// initiated. The node which passed the hole punch target peer in a NODES response to us is
     /// used as relay.
