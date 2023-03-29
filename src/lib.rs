@@ -2,15 +2,23 @@ use async_trait::async_trait;
 use std::fmt::{Debug, Display};
 
 mod error;
+mod macro_rules;
 mod notification;
+mod relay_init_notif;
+mod relay_msg_notif;
 
 pub use error::HolePunchError;
-pub use notification::{MessageNonce, NodeId, Notification, RelayInit, RelayMsg};
+pub use notification::{
+    MessageNonce, NodeId, Notification, MESSAGE_NONCE_LENGTH, NODE_ID_LENGTH,
+    REALY_INIT_NOTIF_TYPE, REALY_MSG_NOTIF_TYPE,
+};
+pub use relay_init_notif::RelayInit;
+pub use relay_msg_notif::RelayMsg;
 
 #[async_trait]
 pub trait NatHolePunch {
     /// A standardised type for sending a node address over discv5.
-    type TEnr: rlp::Encodable + rlp::Decodable + Send + Sync;
+    type TEnr: rlp::Encodable + rlp::Decodable + Send + Sync + Display;
     /// A type for indexing sessions. Each `(node-id, socket-address)` combination gets a unique
     /// session in discv5.
     type TNodeAddress: Send + Sync;

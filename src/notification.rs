@@ -1,51 +1,39 @@
-use crate::{impl_from_variant_unwrap, impl_from_variant_wrap};
-use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
+use crate::impl_from_variant_wrap;
+use crate::{RelayInit, RelayMsg};
+use rlp::{Decodable, DecoderError, Encodable, Rlp};
+use std::{fmt, fmt::Display};
 
-/// Notification types for rlp encoding notifications.
-pub const REALY_INIT_NOTIF_TYPE: u8 = 0;
-pub const REALY_MSG_NOTIF_TYPE: u8 = 1;
 /// Discv5 message nonce length in bytes.
 pub const MESSAGE_NONCE_LENGTH: usize = 12;
 /// Discv5 node id length in bytes.
 pub const NODE_ID_LENGTH: usize = 32;
+/// Notification types as according to wire protocol.
+///
+/// RelayInit notification type.
+pub const REALY_INIT_NOTIF_TYPE: u8 = 0;
+/// RelayMsg notification type.
+pub const REALY_MSG_NOTIF_TYPE: u8 = 1;
 
 /// Discv5 message nonce.
 pub type MessageNonce = [u8; MESSAGE_NONCE_LENGTH];
-/// The message nonce of the timed out FINDNODE request that triggered the initiation of this hole
-/// punching attempt.
-pub type NonceOfTimedOutMessage = MessageNonce;
-
 /// Discv5 node id.
 pub type NodeId = [u8; NODE_ID_LENGTH];
 
 /// A unicast notification sent over discv5.
 #[derive(Debug)]
-pub enum Notification<TEnr: Encodable + Decodable> {
+pub enum Notification<TEnr: Encodable + Decodable + Display> {
     /// Initialise a one-shot relay circuit for hole punching.
     RelayInit(RelayInit<TEnr>),
     /// A relayed notification for hole punching.
     RelayMsg(RelayMsg<TEnr>),
 }
 
-/// A hole punch notification sent to the relay. Contains the enr of the initiator of the hole
-/// punch, the nonce of the request from the initiator to the target that triggered `on_time_out`
-/// and the node id of the hole punch target peer.
-#[derive(Clone, PartialEq, Debug)]
-pub struct RelayInit<TEnr: Encodable + Decodable>(pub TEnr, pub NodeId, pub NonceOfTimedOutMessage);
-/// A relayed hole punch notification sent to the target. Contains the enr of the initiator of the
-/// hole punch and the nonce of the initiator's request that timed out, so the hole punch target
-/// peer can respond with WHOAREYOU to the initiator.
-#[derive(Clone, PartialEq, Debug)]
-pub struct RelayMsg<TEnr: Encodable + Decodable>(pub TEnr, pub NonceOfTimedOutMessage);
-
-impl_from_variant_wrap!(<TEnr: Encodable + Decodable,>, RelayInit<TEnr>, Notification<TEnr>, Self::RelayInit);
-impl_from_variant_unwrap!(<TEnr: Encodable + Decodable,>, Notification<TEnr>, RelayInit<TEnr>, Notification::RelayInit);
-impl_from_variant_wrap!(<TEnr: Encodable + Decodable,>, RelayMsg<TEnr>, Notification<TEnr>, Self::RelayMsg);
-impl_from_variant_unwrap!(<TEnr: Encodable + Decodable,>, Notification<TEnr>, RelayMsg<TEnr>, Notification::RelayMsg);
+impl_from_variant_wrap!(<TEnr: Encodable + Decodable + Display,>, RelayInit<TEnr>, Notification<TEnr>, Self::RelayInit);
+impl_from_variant_wrap!(<TEnr: Encodable + Decodable + Display,>, RelayMsg<TEnr>, Notification<TEnr>, Self::RelayMsg);
 
 impl<TEnr> Notification<TEnr>
 where
-    TEnr: Encodable + Decodable,
+    TEnr: Encodable + Decodable + Display,
 {
     pub fn rlp_decode(data: &[u8]) -> Result<Self, DecoderError> {
         if data.len() < 3 {
@@ -96,42 +84,12 @@ where
     }
 }
 
-impl<TEnr> RelayInit<TEnr>
-where
-    TEnr: Encodable + Decodable,
-{
-    pub fn rlp_encode(self) -> Vec<u8> {
-        let RelayInit(initiator, target, nonce) = self;
-
-        let mut s = RlpStream::new();
-        s.begin_list(3);
-        s.append(&initiator);
-        s.append(&(&target as &[u8]));
-        s.append(&(&nonce as &[u8]));
-
-        let mut buf: Vec<u8> = Vec::with_capacity(280);
-        buf.push(REALY_INIT_NOTIF_TYPE);
-        buf.extend_from_slice(&s.out());
-        buf
-    }
-}
-
-impl<TEnr> RelayMsg<TEnr>
-where
-    TEnr: Encodable + Decodable,
-{
-    pub fn rlp_encode(self) -> Vec<u8> {
-        let RelayMsg(initiator, nonce) = self;
-
-        let mut s = RlpStream::new();
-        s.begin_list(2);
-        s.append(&initiator);
-        s.append(&(&nonce as &[u8]));
-
-        let mut buf: Vec<u8> = Vec::with_capacity(312);
-        buf.push(REALY_MSG_NOTIF_TYPE);
-        buf.extend_from_slice(&s.out());
-        buf
+impl<TEnr: Encodable + Decodable + Display> Display for Notification<TEnr> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Notification::RelayInit(notif) => write!(f, "Notification: {}", notif),
+            Notification::RelayMsg(notif) => write!(f, "Notification: {}", notif),
+        }
     }
 }
 
