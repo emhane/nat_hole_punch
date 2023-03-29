@@ -1,7 +1,10 @@
 use crate::impl_from_variant_wrap;
 use crate::{RelayInit, RelayMsg};
 use rlp::{Decodable, DecoderError, Encodable, Rlp};
-use std::{fmt, fmt::Display};
+use std::{
+    fmt,
+    fmt::{Debug, Display},
+};
 
 /// Discv5 message nonce length in bytes.
 pub const MESSAGE_NONCE_LENGTH: usize = 12;
@@ -20,20 +23,20 @@ pub type MessageNonce = [u8; MESSAGE_NONCE_LENGTH];
 pub type NodeId = [u8; NODE_ID_LENGTH];
 
 /// A unicast notification sent over discv5.
-#[derive(Debug)]
-pub enum Notification<TEnr: Encodable + Decodable + Display> {
+#[derive(Debug, PartialEq, Eq)]
+pub enum Notification<TEnr: Encodable + Decodable + Display + Debug + PartialEq + Eq> {
     /// Initialise a one-shot relay circuit for hole punching.
     RelayInit(RelayInit<TEnr>),
     /// A relayed notification for hole punching.
     RelayMsg(RelayMsg<TEnr>),
 }
 
-impl_from_variant_wrap!(<TEnr: Encodable + Decodable + Display,>, RelayInit<TEnr>, Notification<TEnr>, Self::RelayInit);
-impl_from_variant_wrap!(<TEnr: Encodable + Decodable + Display,>, RelayMsg<TEnr>, Notification<TEnr>, Self::RelayMsg);
+impl_from_variant_wrap!(<TEnr: Encodable + Decodable + Display + Debug + PartialEq + Eq,>, RelayInit<TEnr>, Notification<TEnr>, Self::RelayInit);
+impl_from_variant_wrap!(<TEnr: Encodable + Decodable + Display + Debug + PartialEq + Eq,>, RelayMsg<TEnr>, Notification<TEnr>, Self::RelayMsg);
 
 impl<TEnr> Notification<TEnr>
 where
-    TEnr: Encodable + Decodable + Display,
+    TEnr: Encodable + Decodable + Display + Debug + PartialEq + Eq,
 {
     pub fn rlp_decode(data: &[u8]) -> Result<Self, DecoderError> {
         if data.len() < 3 {
@@ -84,7 +87,9 @@ where
     }
 }
 
-impl<TEnr: Encodable + Decodable + Display> Display for Notification<TEnr> {
+impl<TEnr: Encodable + Decodable + Display + Debug + PartialEq + Eq> Display
+    for Notification<TEnr>
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Notification::RelayInit(notif) => write!(f, "Notification: {}", notif),

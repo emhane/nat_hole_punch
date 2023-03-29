@@ -18,7 +18,7 @@ pub use relay_msg_notif::RelayMsg;
 #[async_trait]
 pub trait NatHolePunch {
     /// A standardised type for sending a node address over discv5.
-    type TEnr: rlp::Encodable + rlp::Decodable + Send + Sync + Display;
+    type TEnr: rlp::Encodable + rlp::Decodable + Send + Sync + Display + Debug + PartialEq + Eq;
     /// A type for indexing sessions. Each `(node-id, socket-address)` combination gets a unique
     /// session in discv5.
     type TNodeAddress: Send + Sync;
