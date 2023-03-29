@@ -108,7 +108,7 @@ mod tests {
         // generate a new enr key for the initiator
         let enr_key = CombinedKey::generate_secp256k1();
         // construct the initiator's ENR
-        let init_enr = EnrBuilder::new("v4").build(&enr_key).unwrap();
+        let inr_enr = EnrBuilder::new("v4").build(&enr_key).unwrap();
 
         // generate a new enr key for the target
         let enr_key_tgt = CombinedKey::generate_secp256k1();
@@ -121,7 +121,7 @@ mod tests {
         nonce[MESSAGE_NONCE_LENGTH - nonce_bytes.len()..].copy_from_slice(&nonce_bytes);
 
         println!("{:?}", nonce_bytes);
-        let notif = RelayInit(init_enr, tgt_node_id, nonce);
+        let notif = RelayInit(inr_enr, tgt_node_id, nonce);
 
         let encoded_notif = notif.clone().rlp_encode();
         let decoded_notif = Notification::rlp_decode(&encoded_notif).expect("Should decode");
@@ -134,13 +134,13 @@ mod tests {
         // generate a new enr key for the initiator
         let enr_key = CombinedKey::generate_secp256k1();
         // construct the initiator's ENR
-        let init_enr = EnrBuilder::new("v4").build(&enr_key).unwrap();
+        let inr_enr = EnrBuilder::new("v4").build(&enr_key).unwrap();
 
         let nonce_bytes = hex::decode("9951051051aceb").unwrap();
         let mut nonce = [0u8; MESSAGE_NONCE_LENGTH];
         nonce[MESSAGE_NONCE_LENGTH - nonce_bytes.len()..].copy_from_slice(&nonce_bytes);
 
-        let notif = RelayMsg(init_enr, nonce);
+        let notif = RelayMsg(inr_enr, nonce);
 
         let encoded_notif = notif.clone().rlp_encode();
         let decoded_notif = Notification::rlp_decode(&encoded_notif).expect("Should decode");
