@@ -1,5 +1,5 @@
 use crate::impl_from_variant_unwrap;
-use crate::{MessageNonce, Notification, REALY_MSG_NOTIF_TYPE};
+use crate::{MessageNonce, Notification, REALYMSG_MSG_TYPE};
 use rlp::{Decodable, Encodable, RlpStream};
 use std::{
     fmt,
@@ -35,7 +35,7 @@ where
         s.append(&(&nonce as &[u8]));
 
         let mut buf: Vec<u8> = Vec::with_capacity(312);
-        buf.push(REALY_MSG_NOTIF_TYPE);
+        buf.push(REALYMSG_MSG_TYPE);
         buf.extend_from_slice(&s.out());
         buf
     }

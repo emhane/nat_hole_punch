@@ -9,8 +9,8 @@ mod relay_msg_notif;
 
 pub use error::HolePunchError;
 pub use notification::{
-    MessageNonce, NodeId, Notification, MESSAGE_NONCE_LENGTH, NODE_ID_LENGTH,
-    REALY_INIT_NOTIF_TYPE, REALY_MSG_NOTIF_TYPE,
+    MessageNonce, NodeId, Notification, MESSAGE_NONCE_LENGTH, NODE_ID_LENGTH, REALYINIT_MSG_TYPE,
+    REALYMSG_MSG_TYPE,
 };
 pub use relay_init_notif::RelayInit;
 pub use relay_msg_notif::RelayMsg;

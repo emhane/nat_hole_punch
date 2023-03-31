@@ -13,9 +13,9 @@ pub const NODE_ID_LENGTH: usize = 32;
 /// Notification types as according to wire protocol.
 ///
 /// RelayInit notification type.
-pub const REALY_INIT_NOTIF_TYPE: u8 = 1;
+pub const REALYINIT_MSG_TYPE: u8 = 7;
 /// RelayMsg notification type.
-pub const REALY_MSG_NOTIF_TYPE: u8 = 2;
+pub const REALYMSG_MSG_TYPE: u8 = 8;
 
 /// Discv5 message nonce.
 pub type MessageNonce = [u8; MESSAGE_NONCE_LENGTH];
@@ -61,7 +61,7 @@ where
         nonce[MESSAGE_NONCE_LENGTH - nonce_bytes.len()..].copy_from_slice(&nonce_bytes);
 
         match msg_type {
-            REALY_INIT_NOTIF_TYPE => {
+            REALYINIT_MSG_TYPE => {
                 if list_len != 3 {
                     return Err(DecoderError::RlpIncorrectListLen);
                 }
@@ -76,7 +76,7 @@ where
 
                 Ok(RelayInit(initiator, tgt, nonce).into())
             }
-            REALY_MSG_NOTIF_TYPE => {
+            REALYMSG_MSG_TYPE => {
                 if list_len != 2 {
                     return Err(DecoderError::RlpIncorrectListLen);
                 }
