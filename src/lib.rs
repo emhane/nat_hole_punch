@@ -34,35 +34,21 @@ pub trait NatHolePunch {
         timed_out_message_nonce: MessageNonce,
         target_session_index: Self::TNodeAddress,
     ) -> Result<(), HolePunchError<Self::TDiscv5Error>>;
-    /// Handle a notification packet received over discv5 used for hole punching.
+    /// Handle a notification packet received over discv5 used for hole punching. Decrypt a
+    /// notification with session keys held for the notification sender, just like for a
+    /// discv5 message. Notifications should differentiate themselves from discv5 messages
+    /// (request or response) in the way they handle a session, or rather the absence of a
+    /// session. Notifications that can't be decrypted with existing session keys should be
+    /// dropped.
     async fn on_notification(
         &mut self,
-        notif_sender: Self::TNodeAddress,
-        notif_nonce: MessageNonce,
-        notif: &[u8],
-        authenticated_data: &[u8],
+        decrypted_notif: &Vec<u8>,
     ) -> Result<(), HolePunchError<Self::TDiscv5Error>> {
-        let decrypted_notif = self
-            .handle_decryption_with_session(notif_sender, notif_nonce, notif, authenticated_data)
-            .await?;
-
         match Notification::rlp_decode(&decrypted_notif)? {
             Notification::RelayInit(relay_init_notif) => self.on_relay_init(relay_init_notif).await,
             Notification::RelayMsg(relay_msg_notif) => self.on_relay_msg(relay_msg_notif).await,
         }
     }
-    /// Decrypt a notification with session keys held for the notification sender, just like for a
-    /// discv5 message. Notifications should differentiate themsleves from discv5 messages
-    /// (request or response) in the way they handle a session, or rather the absence of a
-    /// session. Notifications that can't be decrypted with existing session keys should be
-    /// dropped.
-    async fn handle_decryption_with_session(
-        &mut self,
-        session_index: Self::TNodeAddress, // notif sender
-        notif_nonce: MessageNonce,
-        notif: &[u8],
-        authenticated_data: &[u8],
-    ) -> Result<Vec<u8>, HolePunchError<Self::TDiscv5Error>>;
     /// This node receives a message to relay. It should send a [`RelayMsg`] to the `target` in
     /// the [`RelayInit`] notification.
     async fn on_relay_init(
