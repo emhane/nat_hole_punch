@@ -22,7 +22,7 @@ impl<TDiscv5Error: Debug + Display> Display for HolePunchError<TDiscv5Error> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             HolePunchError::NotificationError(e) => {
-                write!(f, "error parsing notification. Error: {}", e)
+                write!(f, "error parsing notification. error: {}", e)
             }
             HolePunchError::InitiatorError(e) => write!(
                 f,
