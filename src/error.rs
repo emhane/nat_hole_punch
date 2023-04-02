@@ -22,21 +22,21 @@ impl<TDiscv5Error: Debug + Display> Display for HolePunchError<TDiscv5Error> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             HolePunchError::NotificationError(e) => {
-                write!(f, "error parsing notification, error: {}", e)
+                write!(f, "error parsing notification, {}", e)
             }
             HolePunchError::InitiatorError(e) => write!(
                 f,
-                "this node failed at initiating a hole punch attempt, error: {}",
+                "this node failed at initiating a hole punch attempt, {}",
                 e
             ),
             HolePunchError::RelayError(e) => write!(
                 f,
-                "this node failed at relaying a hole punch attempt, error: {}",
+                "this node failed at relaying a hole punch attempt, {}",
                 e
             ),
             HolePunchError::TargetError(e) => write!(
                 f,
-                "this node failed as the target of a hole punch attempt, error: {}",
+                "this node failed as the target of a hole punch attempt, {}",
                 e
             ),
         }
