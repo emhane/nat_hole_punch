@@ -1,5 +1,8 @@
 use async_trait::async_trait;
-use std::fmt::{Debug, Display};
+use std::{
+    fmt::{Debug, Display},
+    net::SocketAddr,
+};
 
 mod error;
 mod macro_rules;
@@ -66,7 +69,7 @@ pub trait NatHolePunch {
     /// masked to circumvent packet filtering.
     async fn on_hole_punch_expired(
         &mut self,
-        dst: Self::TNodeAddress,
+        dst: SocketAddr,
     ) -> Result<(), HolePunchError<Self::TDiscv5Error>>;
 }
 
