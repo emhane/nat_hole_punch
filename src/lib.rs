@@ -4,16 +4,12 @@ use std::fmt::{Debug, Display};
 mod error;
 mod macro_rules;
 mod notification;
-mod relay_init_notif;
-mod relay_msg_notif;
 
 pub use error::HolePunchError;
 pub use notification::{
-    MessageNonce, NodeId, Notification, MESSAGE_NONCE_LENGTH, NODE_ID_LENGTH, REALYINIT_MSG_TYPE,
-    REALYMSG_MSG_TYPE,
+    MessageNonce, NodeId, Notification, RelayInit, RelayMsg, MESSAGE_NONCE_LENGTH, NODE_ID_LENGTH,
+    REALYINIT_MSG_TYPE, REALYMSG_MSG_TYPE,
 };
-pub use relay_init_notif::RelayInit;
-pub use relay_msg_notif::RelayMsg;
 
 /// The expected shortest lifetime in most NAT configurations of a punched hole in seconds.
 pub const DEFAULT_HOLE_PUNCH_LIFETIME: u64 = 20;

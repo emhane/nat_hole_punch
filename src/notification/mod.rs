@@ -1,10 +1,15 @@
 use crate::impl_from_variant_wrap;
-use crate::{RelayInit, RelayMsg};
 use rlp::{Decodable, DecoderError, Encodable, Rlp};
 use std::{
     fmt,
     fmt::{Debug, Display},
 };
+
+mod relay_init;
+mod relay_msg;
+
+pub use relay_init::RelayInit;
+pub use relay_msg::RelayMsg;
 
 /// Discv5 message nonce length in bytes.
 pub const MESSAGE_NONCE_LENGTH: usize = 12;
