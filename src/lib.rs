@@ -16,7 +16,7 @@ pub use relay_init_notif::RelayInit;
 pub use relay_msg_notif::RelayMsg;
 
 /// The expected shortest lifetime in most NAT configurations of a punched hole in seconds.
-pub const DEFAULT_PUNCHED_HOLE_LIFETIME: u64 = 20;
+pub const DEFAULT_HOLE_PUNCH_LIFETIME: u64 = 20;
 
 #[async_trait]
 pub trait NatHolePunch {
@@ -64,10 +64,11 @@ pub trait NatHolePunch {
         &mut self,
         notif: RelayMsg<Self::TEnr>,
     ) -> Result<(), HolePunchError<Self::TDiscv5Error>>;
-    /// Send an empty packet to keep a hole punched for the recipient in the sender's NAT. This
-    /// spares the sender the work of encryption, as any hardcoded bytes would have to be masked
-    /// to circumvent packet filtering.
-    async fn send_keep_hole_punched_packet(
+    /// If no packet is sent to a peer within [`DEFAULT_HOLE_PUNCH_LIFETIME`], that hole will
+    /// close. An empty packet should be sent to the peer to keep the hole punched. An empty
+    /// packet spares the sender the work of encryption, as any hardcoded bytes would have to be
+    /// masked to circumvent packet filtering.
+    async fn on_hole_punch_expired(
         &mut self,
         dst: Self::TNodeAddress,
     ) -> Result<(), HolePunchError<Self::TDiscv5Error>>;
