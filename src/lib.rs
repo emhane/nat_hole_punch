@@ -78,38 +78,40 @@ pub trait NatHolePunch {
         &mut self,
         dst: SocketAddr,
     ) -> Result<(), HolePunchError<Self::TDiscv5Error>>;
-    /// Tests if the local node is behind NAT based on the node's observed socket as configured on
-    /// start-up as the advertised socket, or as reported by peers at runtime. If the node is not
-    /// behind NAT, it is most likely that the program can bind to the observed IP address at some
-    /// port out of a random subset of ports from a range of probably unused ports, defaulting to
-    /// the port range 1025-65536.
-    fn is_behind_nat(
-        observed_ip: IpAddr,
-        (min_unused_port, max_unused_port): (Option<u16>, Option<u16>),
-    ) -> bool {
-        // If the node cannot bind to the observed address at any of some random ports, we
-        // conclude it is behind NAT.
-        let mut rng = rand::thread_rng();
-        let min_port = match min_unused_port {
-            Some(port) => port,
-            None => DEFAULT_MIN_PORT,
-        };
-        let max_port = match max_unused_port {
-            Some(port) => port,
-            None => DEFAULT_MAX_PORT,
-        };
-        for _ in 0..DEFAULT_PORT_BIND_TRIES {
-            let rnd_port: u16 = rng.gen_range(min_port..=max_port);
-            let socket_addr: SocketAddr = format!("{}:{}", observed_ip, rnd_port).parse().unwrap();
-            if UdpSocket::bind(socket_addr).is_ok() {
-                return false;
-            }
-        }
-        true
-    }
 }
 
-/// Checks if this packet is empty indicating it is probably a packet to keep a hole punched.
+/// Helper function to check if this packet is empty indicating it is probably a packet to keep a
+/// hole punched.
 pub fn is_keep_hole_punched_packet(bytes_read: usize) -> bool {
     bytes_read == 0
+}
+
+/// Helper function to test if the local node is behind NAT based on the node's observed
+/// socket as configured on start-up as the advertised socket, or as reported by peers at
+/// runtime. If the node is not behind NAT, it is most likely that the program can bind to the
+/// observed IP address at some port out of a random subset of ports from a range of probably
+/// unused ports, defaulting to the port range 1025-65536.
+pub fn is_behind_nat(
+    observed_ip: IpAddr,
+    (min_unused_port, max_unused_port): (Option<u16>, Option<u16>),
+) -> bool {
+    // If the node cannot bind to the observed address at any of some random ports, we
+    // conclude it is behind NAT.
+    let mut rng = rand::thread_rng();
+    let min_port = match min_unused_port {
+        Some(port) => port,
+        None => DEFAULT_MIN_PORT,
+    };
+    let max_port = match max_unused_port {
+        Some(port) => port,
+        None => DEFAULT_MAX_PORT,
+    };
+    for _ in 0..DEFAULT_PORT_BIND_TRIES {
+        let rnd_port: u16 = rng.gen_range(min_port..=max_port);
+        let socket_addr: SocketAddr = format!("{}:{}", observed_ip, rnd_port).parse().unwrap();
+        if UdpSocket::bind(socket_addr).is_ok() {
+            return false;
+        }
+    }
+    true
 }
