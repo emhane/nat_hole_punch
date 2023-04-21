@@ -9,4 +9,5 @@ edition = "2021"
 async-trait = "0.1.67"
 enr = { version = "0.8.0", features = ["k256", "ed25519"] }
 hex = "0.4.3"
+rand = "0.8.5"
 rlp = "0.5.2"
