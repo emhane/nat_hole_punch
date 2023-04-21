@@ -84,7 +84,6 @@ pub trait NatHolePunch {
     /// port out of a random subset of ports from a range of probably unused ports, defaulting to
     /// the port range 1025-65536.
     fn is_behind_nat(
-        &mut self,
         observed_ip: IpAddr,
         (min_unused_port, max_unused_port): (Option<u16>, Option<u16>),
     ) -> bool {
