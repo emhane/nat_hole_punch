@@ -51,9 +51,9 @@ pub trait NatHolePunch {
     /// dropped.
     async fn on_notification(
         &mut self,
-        decrypted_notif: &Vec<u8>,
+        decrypted_notif: &[u8],
     ) -> Result<(), HolePunchError<Self::TDiscv5Error>> {
-        match Notification::rlp_decode(&decrypted_notif)? {
+        match Notification::rlp_decode(decrypted_notif)? {
             Notification::RelayInit(relay_init_notif) => self.on_relay_init(relay_init_notif).await,
             Notification::RelayMsg(relay_msg_notif) => self.on_relay_msg(relay_msg_notif).await,
         }
