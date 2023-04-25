@@ -7,5 +7,9 @@ edition = "2021"
 
 [dependencies]
 async-trait = "0.1.67"
-discv5 = { version = "0.2.1", features = ["serde"]}
+enr = { version = "0.8.0", features = ["k256", "ed25519"] }
+hex = "0.4.3"
+parse-display-derive = "0.8.0"
+rand = "0.8.5"
 rlp = "0.5.2"
+thiserror = "1.0.40"

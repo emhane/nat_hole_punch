@@ -1,83 +1,89 @@
 use async_trait::async_trait;
-use discv5::handler::NodeAddress;
-use rlp::DecoderError;
+use rand::Rng;
+use std::{
+    fmt::{Debug, Display},
+    net::{IpAddr, SocketAddr, UdpSocket},
+    ops::RangeInclusive,
+};
 
-macro_rules! impl_from_variant_wrap {
-    ($from_type: ty, $to_type: ty, $variant: path) => {
-        impl From<$from_type> for $to_type {
-            fn from(e: $from_type) -> Self {
-                $variant(e)
-            }
-        }
-    };
-}
+mod error;
+mod macro_rules;
+mod notification;
 
-#[derive(Debug)]
-pub enum HolePunchError {
-    NotificationError(DecoderError),
-    RelayError(String),
-    TargetError(String),
-}
+pub use error::HolePunchError;
+pub use notification::{
+    Enr, MessageNonce, NodeId, Notification, RelayInit, RelayMsg, MESSAGE_NONCE_LENGTH,
+    NODE_ID_LENGTH, REALYINIT_MSG_TYPE, REALYMSG_MSG_TYPE,
+};
+
+/// The expected shortest lifetime in most NAT configurations of a punched hole in seconds.
+pub const DEFAULT_HOLE_PUNCH_LIFETIME: u64 = 20;
+/// The default number of ports to try before concluding that the local node is behind NAT.
+pub const DEFAULT_PORT_BIND_TRIES: usize = 4;
+/// Port range that is not impossible to bind to.
+pub const USER_AND_DYNAMIC_PORTS: RangeInclusive<u16> = 1025..=u16::MAX;
 
 #[async_trait]
 pub trait NatHolePunch {
-    /// A FINDNODE request, as part of a find node query, has timed out. Hole punching is
-    /// initiated using the node which passed the hole punch target peer in a NODES response to us
-    /// as relay.
-    async fn on_time_out(
+    /// A type in discv5 for indexing sessions. Discv5 indexes sessions based on combination
+    /// `(socket, node-id)`.
+    type SessionIndex: Send + Sync;
+    /// A discv5 error type.
+    type Discv5Error: Display + Debug;
+    /// A request times out. Should trigger the initiation of a hole punch attempt, given a
+    /// transitive route to the target exists.
+    async fn on_request_time_out(
         &mut self,
-        relay: NodeAddress,
-        notif: RelayInit,
-    ) -> Result<(), HolePunchError>;
-    /// Handle a notification received over discv5 used for hole punching.
-    async fn on_notification(&mut self, message: Vec<u8>) -> Result<(), HolePunchError> {
-        match Notification::decode(message)? {
-            Notification::RelayInit(notif) => self.on_relay_init(notif).await,
-            Notification::RelayMsg(notif) => self.on_relay_msg(notif).await,
+        relay: Self::SessionIndex,
+        local_enr: Enr, // initiator-enr
+        timed_out_message_nonce: MessageNonce,
+        target_session_index: Self::SessionIndex,
+    ) -> Result<(), HolePunchError<Self::Discv5Error>>;
+    /// A notification is received over discv5.
+    async fn on_notification(
+        &mut self,
+        decrypted_notif: &[u8],
+    ) -> Result<(), HolePunchError<Self::Discv5Error>> {
+        match Notification::rlp_decode(decrypted_notif)? {
+            Notification::RelayInit(relay_init_notif) => self.on_relay_init(relay_init_notif).await,
+            Notification::RelayMsg(relay_msg_notif) => self.on_relay_msg(relay_msg_notif).await,
         }
     }
-    /// This node receives a message to relay.
-    async fn on_relay_init(&mut self, notif: RelayInit) -> Result<(), HolePunchError>;
-    /// This node received a relayed message and should punch a hole in its NAT for the initiator.
-    async fn on_relay_msg(&mut self, notif: RelayMsg) -> Result<(), HolePunchError>;
+    /// A [`RelayInit`] notification is received indicating this node is the relay. Should trigger
+    /// sending a [`RelayMsg`] to the target.
+    async fn on_relay_init(
+        &mut self,
+        notif: RelayInit,
+    ) -> Result<(), HolePunchError<Self::Discv5Error>>;
+    /// A [`RelayMsg`] notification is received indicating this node is the target. Should trigger
+    /// a WHOAREYOU to be sent to the initiator using the `nonce` in the [`RelayMsg`].
+    async fn on_relay_msg(
+        &mut self,
+        notif: RelayMsg,
+    ) -> Result<(), HolePunchError<Self::Discv5Error>>;
+    /// A punched hole closes. Should trigger an empty packet to be sent to the peer.
+    async fn on_hole_punch_expired(
+        &mut self,
+        dst: SocketAddr,
+    ) -> Result<(), HolePunchError<Self::Discv5Error>>;
 }
 
-/// A unicast notification sent over discv5.
-pub enum Notification {
-    /// Initialise a one-shot relay circuit.
-    RelayInit(RelayInit),
-    /// A relayed notification.
-    RelayMsg(RelayMsg),
-}
-
-/// The node address of the initiator of the hole punch, a nonce from the timed out request from
-/// the initiator to the target that triggers the hole punch and the node address of the hole
-/// punch target peer.
-pub struct RelayInit(NodeAddress, [u8; 12], NodeAddress);
-/// The node address of the initiator of the hole punch and a nonce from the initiator, so the
-/// hole punch target peer can respond with WHOAREYOU to the initiator.
-pub struct RelayMsg(NodeAddress, [u8; 12]);
-
-impl_from_variant_wrap!(RelayInit, Notification, Self::RelayInit);
-impl_from_variant_wrap!(RelayMsg, Notification, Self::RelayMsg);
-
-impl Notification {
-    fn decode(message: Vec<u8>) -> Result<Self, HolePunchError> {
-        // check flag todo(emhane)
-        todo!()
+/// Helper function to test if the local node is behind NAT based on the node's observed reachable
+/// socket.
+pub fn is_behind_nat(observed_ip: IpAddr, unused_port_range: Option<RangeInclusive<u16>>) -> bool {
+    // If the node cannot bind to the observed address at any of some random ports, we
+    // conclude it is behind NAT.
+    let mut rng = rand::thread_rng();
+    let unused_port_range = match unused_port_range {
+        Some(range) => range,
+        None => USER_AND_DYNAMIC_PORTS,
+    };
+    for _ in 0..DEFAULT_PORT_BIND_TRIES {
+        let rnd_port: u16 = rng.gen_range(unused_port_range.clone());
+        let socket_addr: SocketAddr = format!("{}:{}", observed_ip, rnd_port).parse().unwrap();
+        if UdpSocket::bind(socket_addr).is_ok() {
+            return false;
+        }
     }
-    fn encode(self) -> Result<Vec<u8>, HolePunchError> {
-        todo!()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_enocde_decode_relay_init() {}
-
-    #[test]
-    fn test_enocde_decode_relay_msg() {}
+    true
 }
