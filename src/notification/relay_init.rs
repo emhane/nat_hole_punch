@@ -1,6 +1,6 @@
 use crate::impl_from_variant_unwrap;
-use crate::{MessageNonce, NodeId, Notification, REALYINIT_MSG_TYPE};
-use rlp::{Decodable, Encodable, RlpStream};
+use crate::{Enr, MessageNonce, NodeId, Notification, REALYINIT_MSG_TYPE};
+use rlp::RlpStream;
 use std::{
     fmt,
     fmt::{Debug, Display},
@@ -14,18 +14,11 @@ type NonceOfTimedOutMessage = MessageNonce;
 /// punch (the sender), the nonce of the request from the initiator to the target that triggered
 /// `on_time_out` and the node id of the hole punch target peer.
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub struct RelayInit<TEnr: Encodable + Decodable + Display + Debug + PartialEq + Eq>(
-    pub TEnr,
-    pub NodeId,
-    pub NonceOfTimedOutMessage,
-);
+pub struct RelayInit(pub Enr, pub NodeId, pub NonceOfTimedOutMessage);
 
-impl_from_variant_unwrap!(<TEnr: Encodable + Decodable + Display + Debug + PartialEq + Eq,>, Notification<TEnr>, RelayInit<TEnr>, Notification::RelayInit);
+impl_from_variant_unwrap!(, Notification, RelayInit, Notification::RelayInit);
 
-impl<TEnr> RelayInit<TEnr>
-where
-    TEnr: Encodable + Decodable + Display + Debug + PartialEq + Eq,
-{
+impl RelayInit {
     pub fn rlp_encode(self) -> Vec<u8> {
         let RelayInit(initiator, target, nonce) = self;
 
@@ -42,7 +35,7 @@ where
     }
 }
 
-impl<TEnr: Encodable + Decodable + Display + Debug + PartialEq + Eq> Display for RelayInit<TEnr> {
+impl Display for RelayInit {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let initiator = &self.0;
         let tgt = hex::encode(self.1);

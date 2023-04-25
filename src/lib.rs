@@ -11,8 +11,8 @@ mod notification;
 
 pub use error::HolePunchError;
 pub use notification::{
-    MessageNonce, NodeId, Notification, RelayInit, RelayMsg, MESSAGE_NONCE_LENGTH, NODE_ID_LENGTH,
-    REALYINIT_MSG_TYPE, REALYMSG_MSG_TYPE,
+    Enr, MessageNonce, NodeId, Notification, RelayInit, RelayMsg, MESSAGE_NONCE_LENGTH,
+    NODE_ID_LENGTH, REALYINIT_MSG_TYPE, REALYMSG_MSG_TYPE,
 };
 
 /// The expected shortest lifetime in most NAT configurations of a punched hole in seconds.
@@ -26,8 +26,6 @@ pub const DEFAULT_MAX_PORT: u16 = u16::MAX;
 
 #[async_trait]
 pub trait NatHolePunch {
-    /// A standardised type for sending a node address over discv5.
-    type TEnr: rlp::Encodable + rlp::Decodable + Send + Sync + Display + Debug + PartialEq + Eq;
     /// A type for indexing sessions. Each `(node-id, socket-address)` combination gets a unique
     /// session in discv5.
     type TNodeAddress: Send + Sync;
@@ -39,16 +37,11 @@ pub trait NatHolePunch {
     async fn on_time_out(
         &mut self,
         relay: Self::TNodeAddress,
-        local_enr: Self::TEnr, // initiator-enr
+        local_enr: Enr, // initiator-enr
         timed_out_message_nonce: MessageNonce,
         target_session_index: Self::TNodeAddress,
     ) -> Result<(), HolePunchError<Self::TDiscv5Error>>;
-    /// Handle a notification packet received over discv5 used for hole punching. Decrypt a
-    /// notification with session keys held for the notification sender, just like for a
-    /// discv5 message. Notifications should differentiate themselves from discv5 messages
-    /// (request or response) in the way they handle a session, or rather the absence of a
-    /// session. Notifications that can't be decrypted with existing session keys should be
-    /// dropped.
+    /// Handle a notification message received over discv5 used for hole punching.
     async fn on_notification(
         &mut self,
         decrypted_notif: &[u8],
@@ -62,13 +55,13 @@ pub trait NatHolePunch {
     /// the [`RelayInit`] notification.
     async fn on_relay_init(
         &mut self,
-        notif: RelayInit<Self::TEnr>,
+        notif: RelayInit,
     ) -> Result<(), HolePunchError<Self::TDiscv5Error>>;
     /// This node received a relayed message and should punch a hole in its NAT for the initiator
     /// by sending a WHOAREYOU packet wrapping the nonce in the [`RelayMsg`].
     async fn on_relay_msg(
         &mut self,
-        notif: RelayMsg<Self::TEnr>,
+        notif: RelayMsg,
     ) -> Result<(), HolePunchError<Self::TDiscv5Error>>;
     /// If no packet is sent to a peer within [`DEFAULT_HOLE_PUNCH_LIFETIME`], that hole will
     /// close. An empty packet should be sent to the peer to keep the hole punched. An empty

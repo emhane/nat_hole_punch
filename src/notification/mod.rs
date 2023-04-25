@@ -1,5 +1,6 @@
 use crate::impl_from_variant_wrap;
-use rlp::{Decodable, DecoderError, Encodable, Rlp};
+use enr::CombinedKey;
+use rlp::{DecoderError, Rlp};
 use std::{
     fmt,
     fmt::{Debug, Display},
@@ -22,6 +23,8 @@ pub const REALYINIT_MSG_TYPE: u8 = 7;
 /// RelayMsg notification type.
 pub const REALYMSG_MSG_TYPE: u8 = 8;
 
+/// Enr using same key type as rust discv5.
+pub type Enr = enr::Enr<CombinedKey>;
 /// Discv5 message nonce.
 pub type MessageNonce = [u8; MESSAGE_NONCE_LENGTH];
 /// Discv5 node id.
@@ -29,20 +32,17 @@ pub type NodeId = [u8; NODE_ID_LENGTH];
 
 /// A unicast notification sent over discv5.
 #[derive(Debug, PartialEq, Eq)]
-pub enum Notification<TEnr: Encodable + Decodable + Display + Debug + PartialEq + Eq> {
+pub enum Notification {
     /// Initialise a one-shot relay circuit for hole punching.
-    RelayInit(RelayInit<TEnr>),
+    RelayInit(RelayInit),
     /// A relayed notification for hole punching.
-    RelayMsg(RelayMsg<TEnr>),
+    RelayMsg(RelayMsg),
 }
 
-impl_from_variant_wrap!(<TEnr: Encodable + Decodable + Display + Debug + PartialEq + Eq,>, RelayInit<TEnr>, Notification<TEnr>, Self::RelayInit);
-impl_from_variant_wrap!(<TEnr: Encodable + Decodable + Display + Debug + PartialEq + Eq,>, RelayMsg<TEnr>, Notification<TEnr>, Self::RelayMsg);
+impl_from_variant_wrap!(, RelayInit, Notification, Self::RelayInit);
+impl_from_variant_wrap!(, RelayMsg, Notification, Self::RelayMsg);
 
-impl<TEnr> Notification<TEnr>
-where
-    TEnr: Encodable + Decodable + Display + Debug + PartialEq + Eq,
-{
+impl Notification {
     pub fn rlp_decode(data: &[u8]) -> Result<Self, DecoderError> {
         if data.len() < 3 {
             return Err(DecoderError::RlpIsTooShort);
@@ -55,7 +55,7 @@ where
             return Err(DecoderError::RlpIsTooShort);
         }
 
-        let initiator = rlp.val_at::<TEnr>(0)?;
+        let initiator = rlp.val_at::<Enr>(0)?;
 
         let nonce_bytes = rlp.val_at::<Vec<u8>>(list_len - 1)?;
 
@@ -92,9 +92,7 @@ where
     }
 }
 
-impl<TEnr: Encodable + Decodable + Display + Debug + PartialEq + Eq> Display
-    for Notification<TEnr>
-{
+impl Display for Notification {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Notification::RelayInit(notif) => write!(f, "Notification: {}", notif),
