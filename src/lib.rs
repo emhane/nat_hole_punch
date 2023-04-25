@@ -26,26 +26,25 @@ pub const DEFAULT_MAX_PORT: u16 = u16::MAX;
 
 #[async_trait]
 pub trait NatHolePunch {
-    /// A type for indexing sessions. Each `(node-id, socket-address)` combination gets a unique
-    /// session in discv5.
-    type TNodeAddress: Send + Sync;
-    /// Discv5 error.
-    type TDiscv5Error: Display + Debug;
+    /// A type in discv5 for indexing sessions.
+    type SessionIndex: Send + Sync;
+    /// A discv5 error type.
+    type Discv5Error: Display + Debug;
     /// A FINDNODE request, as part of a find node query, has timed out. Hole punching is
     /// initiated. The node which passed the hole punch target peer in a NODES response to us is
     /// used as relay.
     async fn on_time_out(
         &mut self,
-        relay: Self::TNodeAddress,
+        relay: Self::SessionIndex,
         local_enr: Enr, // initiator-enr
         timed_out_message_nonce: MessageNonce,
-        target_session_index: Self::TNodeAddress,
-    ) -> Result<(), HolePunchError<Self::TDiscv5Error>>;
+        target_session_index: Self::SessionIndex,
+    ) -> Result<(), HolePunchError<Self::Discv5Error>>;
     /// Handle a notification message received over discv5 used for hole punching.
     async fn on_notification(
         &mut self,
         decrypted_notif: &[u8],
-    ) -> Result<(), HolePunchError<Self::TDiscv5Error>> {
+    ) -> Result<(), HolePunchError<Self::Discv5Error>> {
         match Notification::rlp_decode(decrypted_notif)? {
             Notification::RelayInit(relay_init_notif) => self.on_relay_init(relay_init_notif).await,
             Notification::RelayMsg(relay_msg_notif) => self.on_relay_msg(relay_msg_notif).await,
@@ -56,13 +55,13 @@ pub trait NatHolePunch {
     async fn on_relay_init(
         &mut self,
         notif: RelayInit,
-    ) -> Result<(), HolePunchError<Self::TDiscv5Error>>;
+    ) -> Result<(), HolePunchError<Self::Discv5Error>>;
     /// This node received a relayed message and should punch a hole in its NAT for the initiator
     /// by sending a WHOAREYOU packet wrapping the nonce in the [`RelayMsg`].
     async fn on_relay_msg(
         &mut self,
         notif: RelayMsg,
-    ) -> Result<(), HolePunchError<Self::TDiscv5Error>>;
+    ) -> Result<(), HolePunchError<Self::Discv5Error>>;
     /// If no packet is sent to a peer within [`DEFAULT_HOLE_PUNCH_LIFETIME`], that hole will
     /// close. An empty packet should be sent to the peer to keep the hole punched. An empty
     /// packet spares the sender the work of encryption, as any hardcoded bytes would have to be
@@ -70,7 +69,7 @@ pub trait NatHolePunch {
     async fn on_hole_punch_expired(
         &mut self,
         dst: SocketAddr,
-    ) -> Result<(), HolePunchError<Self::TDiscv5Error>>;
+    ) -> Result<(), HolePunchError<Self::Discv5Error>>;
 }
 
 /// Helper function to check if this packet is empty indicating it is probably a packet to keep a

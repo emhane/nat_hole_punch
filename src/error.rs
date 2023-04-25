@@ -1,44 +1,15 @@
-use crate::impl_from_variant_wrap;
 use rlp::DecoderError;
-use std::{
-    error::Error,
-    fmt,
-    fmt::{Debug, Display},
-};
+use std::fmt::{Debug, Display};
+use thiserror::Error;
 
-#[derive(Debug)]
-pub enum HolePunchError<TDiscv5Error: Debug + Display> {
-    NotificationError(DecoderError),
-    InitiatorError(TDiscv5Error),
-    RelayError(TDiscv5Error),
-    TargetError(TDiscv5Error),
-}
-
-impl_from_variant_wrap!(<TDiscv5Error: Debug + Display,>, DecoderError, HolePunchError<TDiscv5Error>, Self::NotificationError);
-
-impl<TDiscv5Error: Debug + Display> Error for HolePunchError<TDiscv5Error> {}
-
-impl<TDiscv5Error: Debug + Display> Display for HolePunchError<TDiscv5Error> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            HolePunchError::NotificationError(e) => {
-                write!(f, "error parsing notification, {}", e)
-            }
-            HolePunchError::InitiatorError(e) => write!(
-                f,
-                "this node failed at initiating a hole punch attempt, {}",
-                e
-            ),
-            HolePunchError::RelayError(e) => write!(
-                f,
-                "this node failed at relaying a hole punch attempt, {}",
-                e
-            ),
-            HolePunchError::TargetError(e) => write!(
-                f,
-                "this node failed as the target of a hole punch attempt, {}",
-                e
-            ),
-        }
-    }
+#[derive(Debug, Error)]
+pub enum HolePunchError<Discv5Error: Debug + Display> {
+    #[error("error parsing notification")]
+    NotificationError(#[from] DecoderError),
+    #[error("failed initiating a hole punch attempt")]
+    InitiatorError(Discv5Error),
+    #[error("failed relaying a hole punch attempt")]
+    RelayError(Discv5Error),
+    #[error("failed as target of a hole punch attempt")]
+    TargetError(Discv5Error),
 }
