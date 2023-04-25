@@ -1,19 +1,15 @@
 use crate::impl_from_variant_unwrap;
 use crate::{Enr, MessageNonce, Notification, REALYMSG_MSG_TYPE};
 use rlp::RlpStream;
-use std::{
-    fmt,
-    fmt::{Debug, Display},
-};
+use std::fmt;
 
-/// Nonce of the timed out FINDNODE request that triggered the initiation of this hole punching
-/// attempt.
+/// Nonce of request that triggered the initiation of this hole punching attempt.
 type NonceOfTimedOutMessage = MessageNonce;
 
 /// A relayed hole punch notification sent to the target. Contains the enr of the initiator of the
 /// hole punch and the nonce of the initiator's request that timed out.
 ///
-/// The hole punch target uses the nonce to respond with WHOAREYOU to the initiator.
+/// The hole punch target should use the nonce to respond with WHOAREYOU to the initiator.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct RelayMsg(pub Enr, pub NonceOfTimedOutMessage);
 
@@ -35,7 +31,7 @@ impl RelayMsg {
     }
 }
 
-impl Display for RelayMsg {
+impl fmt::Display for RelayMsg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let initiator = &self.0;
         let nonce = hex::encode(self.1);

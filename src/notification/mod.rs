@@ -1,10 +1,7 @@
 use crate::impl_from_variant_wrap;
 use enr::CombinedKey;
+use parse_display_derive::Display;
 use rlp::{DecoderError, Rlp};
-use std::{
-    fmt,
-    fmt::{Debug, Display},
-};
 
 mod relay_init;
 mod relay_msg;
@@ -31,11 +28,13 @@ pub type MessageNonce = [u8; MESSAGE_NONCE_LENGTH];
 pub type NodeId = [u8; NODE_ID_LENGTH];
 
 /// A unicast notification sent over discv5.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Display, PartialEq, Eq)]
 pub enum Notification {
     /// Initialise a one-shot relay circuit for hole punching.
+    #[display("Notification: {0}")]
     RelayInit(RelayInit),
     /// A relayed notification for hole punching.
+    #[display("Notification: {0}")]
     RelayMsg(RelayMsg),
 }
 
@@ -88,15 +87,6 @@ impl Notification {
                 Ok(RelayMsg(initiator, nonce).into())
             }
             _ => Err(DecoderError::Custom("invalid notification type")),
-        }
-    }
-}
-
-impl Display for Notification {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Notification::RelayInit(notif) => write!(f, "Notification: {}", notif),
-            Notification::RelayMsg(notif) => write!(f, "Notification: {}", notif),
         }
     }
 }
