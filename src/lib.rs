@@ -70,7 +70,11 @@ pub trait NatHolePunch {
 
 /// Helper function to test if the local node is behind NAT based on the node's observed reachable
 /// socket.
-pub fn is_behind_nat(observed_ip: IpAddr, unused_port_range: Option<RangeInclusive<u16>>) -> bool {
+pub fn is_behind_nat(
+    observed_ip: IpAddr,
+    unused_port_range: Option<RangeInclusive<u16>>,
+    max_retries: Option<usize>,
+) -> bool {
     // If the node cannot bind to the observed address at any of some random ports, we
     // conclude it is behind NAT.
     let mut rng = rand::thread_rng();
@@ -78,7 +82,11 @@ pub fn is_behind_nat(observed_ip: IpAddr, unused_port_range: Option<RangeInclusi
         Some(range) => range,
         None => USER_AND_DYNAMIC_PORTS,
     };
-    for _ in 0..DEFAULT_PORT_BIND_TRIES {
+    let retries = match max_retries {
+        Some(max) => max,
+        None => DEFAULT_PORT_BIND_TRIES,
+    };
+    for _ in 0..retries {
         let rnd_port: u16 = rng.gen_range(unused_port_range.clone());
         let socket_addr: SocketAddr = format!("{}:{}", observed_ip, rnd_port).parse().unwrap();
         if UdpSocket::bind(socket_addr).is_ok() {
