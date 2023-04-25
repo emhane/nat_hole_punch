@@ -13,14 +13,12 @@ pub use relay_msg::RelayMsg;
 pub const MESSAGE_NONCE_LENGTH: usize = 12;
 /// Discv5 node id length in bytes.
 pub const NODE_ID_LENGTH: usize = 32;
-/// Notification types as according to wire protocol.
-///
 /// RelayInit notification type.
 pub const REALYINIT_MSG_TYPE: u8 = 7;
 /// RelayMsg notification type.
 pub const REALYMSG_MSG_TYPE: u8 = 8;
 
-/// Enr using same key type as rust discv5.
+/// Enr using same key type as sigp/discv5.
 pub type Enr = enr::Enr<CombinedKey>;
 /// Discv5 message nonce.
 pub type MessageNonce = [u8; MESSAGE_NONCE_LENGTH];
@@ -30,10 +28,10 @@ pub type NodeId = [u8; NODE_ID_LENGTH];
 /// A unicast notification sent over discv5.
 #[derive(Debug, Display, PartialEq, Eq)]
 pub enum Notification {
-    /// Initialise a one-shot relay circuit for hole punching.
+    /// A notification to initialise a one-shot relay circuit for hole-punching.
     #[display("Notification: {0}")]
     RelayInit(RelayInit),
-    /// A relayed notification for hole punching.
+    /// The notification relayed to target of hole punch attempt.
     #[display("Notification: {0}")]
     RelayMsg(RelayMsg),
 }

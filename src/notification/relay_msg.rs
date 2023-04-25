@@ -6,10 +6,8 @@ use std::fmt;
 /// Nonce of request that triggered the initiation of this hole punching attempt.
 type NonceOfTimedOutMessage = MessageNonce;
 
-/// A relayed hole punch notification sent to the target. Contains the enr of the initiator of the
-/// hole punch and the nonce of the initiator's request that timed out.
-///
-/// The hole punch target should use the nonce to respond with WHOAREYOU to the initiator.
+/// A notification sent from the initiator to the relay. Contains the enr of the initiator and the
+/// nonce of the timed out request.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct RelayMsg(pub Enr, pub NonceOfTimedOutMessage);
 
