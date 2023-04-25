@@ -25,7 +25,8 @@ pub const USER_AND_DYNAMIC_PORTS: RangeInclusive<u16> = 1025..=u16::MAX;
 
 #[async_trait]
 pub trait NatHolePunch {
-    /// A type in discv5 for indexing sessions.
+    /// A type in discv5 for indexing sessions. Discv5 indexes sessions based on combination
+    /// `(socket, node-id)`.
     type SessionIndex: Send + Sync;
     /// A discv5 error type.
     type Discv5Error: Display + Debug;
