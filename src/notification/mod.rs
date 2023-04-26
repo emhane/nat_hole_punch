@@ -1,6 +1,5 @@
 use crate::impl_from_variant_wrap;
-use enr::CombinedKey;
-pub use enr::NodeId;
+pub use enr::{CombinedKey, NodeId};
 use parse_display_derive::Display;
 use rlp::{DecoderError, Rlp};
 
