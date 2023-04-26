@@ -1,5 +1,5 @@
-use crate::impl_from_variant_unwrap;
-use crate::{Enr, MessageNonce, NodeId, Notification, REALYINIT_MSG_TYPE};
+use crate::{impl_from_variant_unwrap, Enr, MessageNonce, Notification, REALYINIT_MSG_TYPE};
+use enr::NodeId;
 use rlp::RlpStream;
 use std::fmt;
 
@@ -20,7 +20,7 @@ impl RelayInit {
         let mut s = RlpStream::new();
         s.begin_list(3);
         s.append(&initiator);
-        s.append(&(&target as &[u8]));
+        s.append(&(&target.raw() as &[u8]));
         s.append(&(&nonce as &[u8]));
 
         let mut buf: Vec<u8> = Vec::with_capacity(280);

@@ -1,5 +1,6 @@
 use crate::impl_from_variant_wrap;
 use enr::CombinedKey;
+pub use enr::NodeId;
 use parse_display_derive::Display;
 use rlp::{DecoderError, Rlp};
 
@@ -22,8 +23,6 @@ pub const REALYMSG_MSG_TYPE: u8 = 8;
 pub type Enr = enr::Enr<CombinedKey>;
 /// Discv5 message nonce.
 pub type MessageNonce = [u8; MESSAGE_NONCE_LENGTH];
-/// Discv5 node id.
-pub type NodeId = [u8; NODE_ID_LENGTH];
 
 /// A unicast notification sent over discv5.
 #[derive(Debug, Display, PartialEq, Eq)]
@@ -67,14 +66,13 @@ impl Notification {
                 if list_len != 3 {
                     return Err(DecoderError::RlpIncorrectListLen);
                 }
-
                 let tgt_bytes = rlp.val_at::<Vec<u8>>(1)?;
                 if tgt_bytes.len() > NODE_ID_LENGTH {
-                    println!("waa");
                     return Err(DecoderError::RlpIsTooBig);
                 }
                 let mut tgt = [0u8; NODE_ID_LENGTH];
                 tgt[NODE_ID_LENGTH - tgt_bytes.len()..].copy_from_slice(&tgt_bytes);
+                let tgt = NodeId::from(tgt);
 
                 Ok(RelayInit(initiator, tgt, nonce).into())
             }
@@ -105,13 +103,12 @@ mod tests {
         let enr_key_tgt = CombinedKey::generate_secp256k1();
         // construct the target's ENR
         let tgt_enr = EnrBuilder::new("v4").build(&enr_key_tgt).unwrap();
-        let tgt_node_id = tgt_enr.node_id().raw();
-        println!("{:?}", tgt_node_id);
+        let tgt_node_id = tgt_enr.node_id();
+
         let nonce_bytes = hex::decode("47644922f5d6e951051051ac").unwrap();
         let mut nonce = [0u8; MESSAGE_NONCE_LENGTH];
         nonce[MESSAGE_NONCE_LENGTH - nonce_bytes.len()..].copy_from_slice(&nonce_bytes);
 
-        println!("{:?}", nonce_bytes);
         let notif = RelayInit(inr_enr, tgt_node_id, nonce);
 
         let encoded_notif = notif.clone().rlp_encode();
